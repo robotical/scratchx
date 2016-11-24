@@ -172,22 +172,27 @@
     }
 
     ext.getGPIO = function(channel, callback){
-      cmd = {"cmd": "get", "id": 14, "sensor": "gpio", "sensor_id": parseInt(channel)};
+      cmd = {"cmd": "get", "id": 13, "sensor": "gpio", "sensor_id": parseInt(channel)};
       sendCmd(cmd, callback);
     }
 
     ext.getMotorCurrent = function(joint, callback){
-      cmd = {"cmd": "get", "id": 14, "sensor": "current", "joint": joint};
+      cmd = {"cmd": "get", "id": 13, "sensor": "current", "joint": joint};
       sendCmd(cmd, callback);
     }
 
     ext.getAccel = function(axis, callback){
-      cmd = {"cmd": "get", "id": 14, "sensor": "accelerometer", "axis": axis};
+      cmd = {"cmd": "get", "id": 13, "sensor": "accelerometer", "axis": axis};
       sendCmd(cmd, callback);
     }
 
     ext.getBattery = function(callback){
-      cmd = {"cmd": "get", "id": 14, "sensor": "battery"};
+      cmd = {"cmd": "get", "id": 13, "sensor": "battery"};
+      sendCmd(cmd, callback);
+    }
+
+    ext.disableMotors = function(callback){
+      cmd = {"cmd": "stop", "id": 14};
       sendCmd(cmd, callback);
     }
 
@@ -196,6 +201,7 @@
     var descriptor = {
         blocks: [
           ['w', 'Get Ready', 'hello'],
+          ['w', 'Turn off motors', 'disableMotors'],
           ['w', 'Wiggle', 'wiggle'],
           ['w', 'Walk %n steps forward', 'walk_forward', 2],
           ['w', 'Walk %n steps backward', 'walk_backward', 2],
@@ -217,12 +223,12 @@
         ],
         menus: {
           leg: ['left', 'right'],
-          eyes: ['normal', 'wide', 'angry'],
+          eyes: ['normal', 'wide', 'angry', 'excited'],
           sagittal: ['forward', 'backward'],
           joints: ['right hip', 'right twist', 'right knee', 'left hip', 'left twist', 'left knee', 'right arm', 'left arm', 'eyes'],
           gpios: ['0', '1', '2', '3', '4', '5', '6', '7'],
           motorCurrents: ['right hip', 'right twist', 'right knee', 'left hip', 'left twist', 'left knee', 'right arm', 'left arm'],
-          accel: ['X axis', 'Y axis', 'Z axis']
+          accel: ['X axis', 'Y axis', 'Z axis'],
         },
 
     };
