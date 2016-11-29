@@ -107,6 +107,11 @@
       sendCmd(cmd,callback);
     }
 
+    ext.walk = function(numsteps, steplength, turn, steptime, callback){
+      cmd = {"cmd": "walk", "id": 6, "numsteps": parseInt(numsteps), "steplength": parseInt(steplength), "turn": parseInt(turn), "movetime": parseInt(parseFloat(steptime)*1000)};
+      sendCmd(cmd, callback);
+    }
+
     ext.walk_forward = function(numsteps, callback){
       cmd = {"cmd": "walk", "id": 6, "numsteps": parseInt(numsteps), "steplength": 50, "turn": 0, "movetime": 1600};
       sendCmd(cmd, callback);
@@ -156,8 +161,8 @@
       sendCmd(cmd, callback);
     }
 
-    ext.moveHip = function(leg, direction, callback){
-      cmd = {"cmd": "moveHip", "id": 2, "leg": leg, "direction": direction, "movetime": 1000, "amount": 30};
+    ext.moveHip = function(leg, direction, movetime, callback){
+      cmd = {"cmd": "moveHip", "id": 2, "leg": leg, "direction": direction, "movetime": parseInt(parseFloat(movetime)*1000), "amount": 30};
       sendCmd(cmd, callback);
     }
 
@@ -203,6 +208,7 @@
           ['w', 'Get Ready', 'hello'],
           ['w', 'Turn off motors', 'disableMotors'],
           ['w', 'Wiggle', 'wiggle'],
+          ['w', 'Walk: %n steps, step length: %n, turn amount: %n, step time: %n', 'walk', 2, 40, 10, 1.8],
           ['w', 'Walk %n steps forward', 'walk_forward', 2],
           ['w', 'Walk %n steps backward', 'walk_backward', 2],
           ['w', 'Turn %m.leg %n steps', 'turn', 'left', 2],
@@ -210,10 +216,10 @@
           ['w', 'Lean %m.leg', 'lean', 'left'],
           ['w', 'Lift %m.leg leg', 'liftLeg', 'left'],
           ['w', 'Lower leg', 'lowerLeg'],
-          ['w', 'Move %m.leg leg %m.sagittal', 'moveHip', 'left', 'forward'],
+          ['w', 'Move %m.leg leg %m.sagittal in %n secs', 'moveHip', 'left', 'forward', 1.1],
           ['w', 'Eyes %m.eyes', 'eyes', 'normal'],
-          ['R', 'Bump switch pressed', 'switchPressed'], 
           ['w', 'Move %m.joints to %n degrees in %n secs', 'moveJoint', 'right hip', 0, 0],
+          ['R', 'Bump switch pressed', 'switchPressed'], 
           ['R', 'Input %m.gpios', 'getGPIO', '0'],
           ['R', '%m.motorCurrents motor Current', 'getMotorCurrent', 'right arm'],
           ['R', 'Accelerometer %m.accel', 'getAccel', 'Z axis'],

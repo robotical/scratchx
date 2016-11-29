@@ -22,7 +22,11 @@
         try {
           rcv = JSON.parse(data);
           if(rcv.sensorData != undefined){
-            returnval = rcv.sensorData;
+            if (rcv.cmd == "tilt"){
+              returnval = 1.0-parseFloat(rcv.sensorData);
+            } else {
+              returnval = rcv.sensorData;
+            }
           } else {
             returnval = data;
           }
@@ -186,6 +190,11 @@
       sendCmd(cmd, callback);
     }
 
+    ext.getTilt = function(callback){
+      cmd = {"cmd": "get", "id": 13, "sensor": "accelerometer", "axis": "Y axis"};
+      sendCmd(cmd, callback);
+    }
+
     ext.getBattery = function(callback){
       cmd = {"cmd": "get", "id": 13, "sensor": "battery"};
       sendCmd(cmd, callback);
@@ -203,17 +212,18 @@
           ['w', 'Get Ready', 'hello'],
           ['w', 'Turn off motors', 'disableMotors'],
           ['w', 'Wiggle', 'wiggle'],
-          ['w', 'Walk %n steps forward', 'walk_forward', 2],
-          ['w', 'Walk %n steps backward', 'walk_backward', 2],
-          ['w', 'Turn %m.leg %n steps', 'turn', 'left', 2],
+//          ['w', 'Walk %n steps forward', 'walk_forward', 2],
+//          ['w', 'Walk %n steps backward', 'walk_backward', 2],
+//          ['w', 'Turn %m.leg %n steps', 'turn', 'left', 2],
           ['w', 'Kick %m.leg leg', 'kick', 'left'],
           ['w', 'Lean %m.leg', 'lean', 'left'],
           ['w', 'Lift %m.leg leg', 'liftLeg', 'left'],
           ['w', 'Lower leg', 'lowerLeg'],
           ['w', 'Move %m.leg leg %m.sagittal', 'moveHip', 'left', 'forward'],
           ['w', 'Eyes %m.eyes', 'eyes', 'normal'],
-          ['R', 'Bump switch pressed', 'switchPressed'], 
           ['w', 'Move %m.joints to %n degrees in %n secs', 'moveJoint', 'right hip', 0, 0],
+          ['R', 'Bump switch pressed', 'switchPressed'], 
+          ['R', 'Tilt', 'getTilt'],
           ['R', 'Input %m.gpios', 'getGPIO', '0'],
           ['R', '%m.motorCurrents motor Current', 'getMotorCurrent', 'right arm'],
           ['R', 'Accelerometer %m.accel', 'getAccel', 'Z axis'],
