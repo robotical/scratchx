@@ -228,7 +228,7 @@
         cmd = {"cmd": "moveJoint", "id": 12, "joint": 'right twist', "angle": parseInt(-40), "movetime": parseInt(500)};
         sendCmd(cmd, undefined);
 
-        cmd = {"cmd": "moveJoint", "id": 12, "joint": 'right twist', "angle": parseInt(40), "movetime": parseInt(500)};
+        cmd = {"cmd": "moveJoint", "id": 12, "joint": 'right twist', "angle": parseInt(30), "movetime": parseInt(500)};
         sendCmd(cmd, undefined);
       //}
 
