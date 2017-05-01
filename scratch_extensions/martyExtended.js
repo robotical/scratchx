@@ -239,5 +239,5 @@
 
     };
 
-    ScratchExtensions.register('SerialRobot', descriptor, ext, {type: 'serial'});
+    ScratchExtensions.register('SerialRobot', descriptor, ext);
 })({});
