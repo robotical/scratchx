@@ -7,7 +7,7 @@
     var device = null;
     var rawData = null;
 
-    var hostname = prompt("What is Marty's address?", "localhost");
+    var hostname = prompt("What is Marty's address?", "172.24.1.1");
 
 
     var waitingForReply = {
