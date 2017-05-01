@@ -7,7 +7,7 @@
     var device = null;
     var rawData = null;
 
-    var hostname = prompt("What is Marty's address?", "marty.local");
+    var hostname = prompt("What is Marty's address?", "localhost");
 
 
     var waitingForReply = {
@@ -233,5 +233,5 @@
 
     };
 
-    ScratchExtensions.register('SerialRobot', descriptor, ext, {type: 'serial'});
+    ScratchExtensions.register('SerialRobot', descriptor, ext);
 })({});
