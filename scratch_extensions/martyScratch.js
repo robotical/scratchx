@@ -193,6 +193,14 @@ function registerExtension2(ext){
     jointID["left arm"] = 6; jointID["right arm"] = 7;
     jointID["eyes"] = 8;
 
+    var stopType = [];
+    stopType['finish move'] = 0;
+    stopType['freeze'] = 1;
+    stopType['disable motors'] = 2;
+    stopType['return to zero'] = 3;
+    stopType['pause'] = 4;
+    stopType['pause and disable motors'] = 5;
+
     ext.blocking_mode = true;
 
     ext.disable_motors = function(callback){
@@ -375,6 +383,11 @@ function registerExtension2(ext){
         }
     }
 
+    ext.stop = function(stop_type, callback){
+        marty.stop(stopType[stop_type]);
+        callback();
+    }
+
     // Block and block menu descriptions
     var descriptor = {
         blocks: [
@@ -402,6 +415,7 @@ function registerExtension2(ext){
             ['R', 'Accelerometer %m.accel', 'get_accel', 'Z axis'],
             ['R', 'Battery voltage', 'get_battery'],
             [' ', 'Set blocking mode %m.enabled', 'set_blocking_mode', 'enabled'],
+            ['w', 'Stop and %m.stopTypes', 'stop', 'return to zero']
         ],
         menus:{
             leg: ['left', 'right'],
@@ -413,6 +427,7 @@ function registerExtension2(ext){
             accel: ['X axis', 'Y axis', 'Z axis'],
             enabled: ['enabled', 'disabled'],
             saggital: ['forward', 'backward'],
+            stopTypes: ['finish move', 'freeze', 'disable motors', 'return to zero', 'pause', 'pause and disable motors']
         }
     };
 
