@@ -279,8 +279,49 @@ function registerExtension2(ext){
 
     ext.play_sound = function(start_freq, end_freq, duration, callback){
         marty.play_sound(parseInt(start_freq), parseInt(end_freq), parseInt(duration*1000));
-        callback()
-;    }
+        callback();
+    }
+
+    ext.lift_leg = function(leg, callback){
+        var joint;
+        var mult = 1;
+        if (leg == 'left'){
+            joint = 'left knee';
+            mult = -1;
+        } else {
+            joint = 'right knee';
+        }
+        marty.move_joint(jointID[joint], 90*mult, 750);
+        setTimeout(callback, 750);
+    }
+
+    ext.move_leg = function(leg, direction, callback){
+        var joint;
+        var mult = 1;
+        if (leg == 'left'){
+            joint = 'left hip';
+        } else {
+            joint = 'right hip';
+        }
+        if (direction == 'forward'){mult = -1};
+        marty.move_joint(jointID[joint], 10*mult, 750);
+        setTimeout(callback, 750);
+    }
+
+    ext.lower_leg = function(callback){
+        var left_knee = marty.get_sensor("mp" + jointID['left knee']);
+        var right_knee = marty.get_sensor("mp" + jointID['right knee']);
+        if (left_knee === null || right_knee === null){
+            setTimeout(ext.lower_leg, 200, callback);
+            return;
+        }
+        if (right_knee > 0 && right_knee > left_knee){
+            marty.move_joint(jointID['right knee'], left_knee, 500);
+        } else {
+            marty.move_joint(jointID['left knee'], right_knee, 500);
+        }
+        setTimeout(callback, 500);
+    }
 
     ext.get_sensor = function(sensor_name, callback){
         console.log("getting sensor " + sensor_name);
@@ -350,6 +391,9 @@ function registerExtension2(ext){
             ['w', 'Stand Straight', 'stand_straight'],
             ['w', 'Eyes %m.eyes', 'eyes', 'normal'],
             ['w', 'Circle Dance %m.leg in %n seconds', 'circle_dance', 'left', 3.0],
+            ['w', 'Lift %m.leg leg', 'lift_leg', 'left'],
+            ['w', 'Move %m.leg leg %m.saggital', 'move_leg', 'left', 'forward'],
+            ['w', 'Lower leg', 'lower_leg'],
             ['w', 'Enable Motors', 'enable_motors'],
             ['w', 'Move %m.joints to %n degrees in %n secs', 'moveJoint', 'right hip', 0, 0],
             ['w', 'Play sound: start at %n Hz, finish at %n Hz, over %n seconds', 'play_sound', 261, 523, 1.0],
@@ -368,6 +412,7 @@ function registerExtension2(ext){
             joints: ['right hip', 'right twist', 'right knee', 'left hip', 'left twist', 'left knee', 'right arm', 'left arm', 'eyes'],
             accel: ['X axis', 'Y axis', 'Z axis'],
             enabled: ['enabled', 'disabled'],
+            saggital: ['forward', 'backward'],
         }
     };
 
@@ -417,7 +462,7 @@ function selectorExtension(ext){
         blocks: [
             // Block type, block name, function name
             ['w', 'Select Marty %m.martys', 'add_marty_by_name', martyNames[0]],
-            ['w', 'Add Marty on IP: %s', 'addMartyByIP', '192.168.0.10'],
+            ['w', 'Select Marty on IP: %s', 'addMartyByIP', '192.168.0.10'],
         ],
         menus: {
             martys : martyNames,
