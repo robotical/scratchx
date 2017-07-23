@@ -56,123 +56,6 @@ function select_marty(ip, name){
     marty = new Marty(ip, name);
 }
 
-/*
-ext = {};
-function registerExtension(){
-    // Cleanup function when the extension is unloaded
-    ext._shutdown = function() {};
-
-    // Status reporting code
-    // Use this to report missing hardware, plugin or unsupported browser
-    ext._getStatus = function() {
-        if (marty != null){
-            return {status: 2, msg: 'Ready'};
-        } else {
-            return {status: 0, msg: 'Not quite ready...'};
-        }
-    };
-
-    ext.hello = function(callback) {
-        marty.hello(1);
-        setTimeout(callback, 2000);
-    };
-
-    ext.celebrate = function(callback){
-        marty.celebrate(4000);
-        setTimeout(callback, 4000);
-        
-    }
-
-    ext.walk = function(numsteps, step_length, turn, step_time, callback){
-        // this.walk = function(steps, turn, move_time, step_length, side){
-        marty.walk(numsteps, turn, step_time*1000, step_length);
-        setTimeout(callback, numsteps*step_time*1000);
-    }
-
-    ext.get_sensor = function(sensor_name, callback){
-        console.log("getting sensor " + sensor_name);
-        var response = marty.get_sensor(sensor_name);
-        if (response === null){
-            setTimeout(ext.get_sensor, 100, sensor_name, callback);
-        } else {
-            callback(response);
-        }
-    }
-
-    ext.getGPIO = function(gpio_id, callback){
-        console.log("getting sensor gpio" + gpio_id);
-        var response = marty.get_sensor("gpio" + gpio_id);
-        if (response === null){
-            setTimeout(ext.getGPIO, 100, gpio_id, callback);
-        } else {
-            callback(response);
-        }
-    }
-
-    var jointID = [];
-    jointID["left hip"] = 0; jointID["left twist"] = 1; jointID["left knee"] = 2;
-    jointID["right hip"] = 3; jointID["right twist"] = 4; jointID["right knee"] = 5;
-    jointID["left arm"] = 6; jointID["right arm"] = 7;
-    jointID["eyes"] = 8;
-
-    ext.get_motor_current = function(joint_name, callback){
-        ext.get_sensor("mc" + jointID[joint_name], callback);
-    }
-
-    // Block and block menu descriptions
-    var descriptor = {
-        blocks: [
-            // Block type, block name, function name
-            ['w', 'Get Ready', 'hello'],
-            ['w', 'Wiggle', 'celebrate'],
-            ['w', 'Walk: %n steps, step length: %n, turn amount: %n, step time: %n', 'walk', 2, 40, 10, 1.8],
-            ['R', 'Input %m.gpios', 'getGPIO', '0'],
-            ['R', '%m.motorCurrents motor current', 'get_motor_current', 'left hip'],
-            [' ', 'I\'m a new block', 'celebrate']
-        ],
-        menus:{
-            gpios: ['0', '1', '2', '3', '4', '5', '6', '7'],
-            motorCurrents: ['right hip', 'right twist', 'right knee', 'left hip', 'left twist', 'left knee', 'right arm', 'left arm'],
-        }
-    };
-
-    testFunc();
-
-    // Register the extension
-    ScratchExtensions.unregister('Marty Scratch');
-    ScratchExtensions.register('Marty Scratch', descriptor, ext);
-}
-*/
-/*
-function registerExtension2(ext){
-    // Cleanup function when the extension is unloaded
-    ext._shutdown = function() {};
-
-    // Status reporting code
-    // Use this to report missing hardware, plugin or unsupported browser
-    ext._getStatus = function() {
-        return {status: 2, msg: 'Ready'};
-    };
-
-    ext.my_first_block = function() {
-        // Code that gets executed when the block is run
-    };
-
-    // Block and block menu descriptions
-    var descriptor = {
-        blocks: [
-            // Block type, block name, function name
-            [' ', 'my second block', 'my_second_block'],
-        ]
-    };
-
-    testFunc();
-
-    // Register the extension
-    ScratchExtensions.register('Marty Scratch Extension 2', descriptor, ext);
-}
-*/
-
 (function(ext) {
     // Cleanup function when the extension is unloaded
     ext._shutdown = function() {};
@@ -210,34 +93,57 @@ function registerExtension2(ext){
 
     ext.hello = function(callback) {
         marty.hello(1);
-        setTimeout(callback, 2000);
+        if (ext.blocking_mode === true){
+            setTimeout(callback, 2000);
+        } else {
+            callback();
+        }
     };
 
     ext.celebrate = function(callback){
         marty.celebrate(4000);
-        setTimeout(callback, 4000);
-        //registerExtension();
+        if (ext.blocking_mode === true){
+            setTimeout(callback, 4000);
+        } else {
+            callback();
+        }
     }
 
     ext.walk = function(numsteps, step_length, turn, step_time, callback){
         // this.walk = function(steps, turn, move_time, step_length, side){
         marty.walk(parseInt(numsteps), parseInt(turn), step_time*1000, parseInt(step_length));
-        setTimeout(callback, numsteps*step_time*1000);
+        if (ext.blocking_mode === true){
+            setTimeout(callback, numsteps*step_time*1000);
+        } else {
+            callback();
+        }
     }
 
     ext.walk_forward = function(numsteps, callback){
         marty.walk(parseInt(numsteps), 0, 1800, 40);
-        setTimeout(callback, numsteps*1800);
+        if (ext.blocking_mode === true){
+            setTimeout(callback, numsteps*1800);
+        } else {
+            callback();
+        }
     }
 
     ext.walk_backward = function(numsteps, callback){
         marty.walk(parseInt(numsteps), 0, 1800, -40);
-        setTimeout(callback, numsteps*1800);   
+        if (ext.blocking_mode === true){
+            setTimeout(callback, numsteps*1800);   
+        } else {
+            callback();
+        }
     }
 
     ext.kick = function(leg, callback){
         marty.kick(leg, 0, 2000);
-        setTimeout(callback, 2000);
+        if (ext.blocking_mode === true){
+            setTimeout(callback, 2000);
+        } else {
+            callback();
+        }
     }
 
     ext.turn = function(direction, numsteps, callback){
@@ -246,29 +152,49 @@ function registerExtension2(ext){
         turn = -80;
       }
       marty.walk(parseInt(numsteps), turn, 1300, 0);
-      setTimeout(callback, parseInt(numsteps)*1300);
+      if (ext.blocking_mode === true){
+        setTimeout(callback, parseInt(numsteps)*1300);
+      } else {
+        callback();
+      }
     }
 
     ext.lean = function(direction, move_time, callback){
         marty.lean(direction, 50, move_time*1000);
-        setTimeout(callback, move_time*1000);
+        if (ext.blocking_mode === true){
+            setTimeout(callback, move_time*1000);
+        } else {
+            callback();
+        }
     }
 
     ext.circle_dance = function(direction, move_time, callback){
         marty.circle_dance(direction, move_time*1000);
-        setTimeout(callback, move_time*1000);
+        if (ext.blocking_mode === true){
+            setTimeout(callback, move_time*1000);
+        } else {
+            callback();
+        }
     }
 
     ext.stand_straight = function(callback){
         marty.stand_straight(2000);
-        setTimeout(callback, 2000);
+        if (ext.blocking_mode === true){
+            setTimeout(callback, 2000);
+        } else {
+            callback();
+        }
     }
 
     ext.eyes = function(position, callback){
         var eyepos = [];
         eyepos['normal'] = 0; eyepos['angry'] = 50; eyepos['excited'] = -25; eyepos['wide'] = -100;
         marty.move_joint(8, eyepos[position], 100);
-        setTimeout(callback, 100);  
+        if (ext.blocking_mode === true){
+            setTimeout(callback, 100);  
+        } else {
+            callback();
+        }
     }
 
     ext.enable_motors = function(callback){
