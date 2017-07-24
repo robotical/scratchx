@@ -19,8 +19,8 @@ function loadScript(url, callback)
     head.appendChild(script);
 }
 
-loadScript("./js/martyjs.js");
-loadScript("./js/martyScan.js", scanForMartys);
+loadScript("https://cdn.robotical.io/static/js/marty.js");
+loadScript("https://cdn.robotical.io/static/js/martyScan.js", scanForMartys);
 
 martylist = [];
 martyNames = [];
@@ -56,7 +56,7 @@ function select_marty(ip, name){
     marty = new Marty(ip, name);
 }
 
-(function(ext) {
+//(function(ext) {
     // Cleanup function when the extension is unloaded
     ext._shutdown = function() {};
 
@@ -313,7 +313,7 @@ function select_marty(ip, name){
         marty.stop(stopType[stop_type]);
         callback();
     }
-
+/*
     // Block and block menu descriptions
     var descriptor = {
         blocks: [
@@ -361,7 +361,7 @@ function select_marty(ip, name){
 
     // Register the extension
     ScratchExtensions.register('Marty Scratch', descriptor, ext);
-})({});
+})({});*/
 
 function selectorExtension(ext){
     // Cleanup function when the extension is unloaded
