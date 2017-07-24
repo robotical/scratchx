@@ -30,8 +30,8 @@ function registerExtension(){
             ['w', 'Walk %n steps backward', 'walk_backward', 2],
             ['w', 'Turn %m.leg %n steps', 'turn', 'left', 2],
             ['w', 'Kick %m.leg leg', 'kick', 'left'],
-            ['w', 'Walk: %n steps, step length: %n, turn amount: %n, step time: %n', 'walk', 2, 40, 10, 1.8],
-            ['w', 'Lean %m.directions in %n seconds', 'lean', 'left', 1.5],
+//            ['w', 'Walk: %n steps, step length: %n, turn amount: %n, step time: %n', 'walk', 2, 40, 10, 1.8],
+//            ['w', 'Lean %m.directions in %n seconds', 'lean', 'left', 1.5],
             ['w', 'Stand Straight', 'stand_straight'],
             ['w', 'Eyes %m.eyes', 'eyes', 'normal'],
             ['w', 'Circle Dance %m.leg in %n seconds', 'circle_dance', 'left', 3.0],
@@ -41,11 +41,12 @@ function registerExtension(){
             ['w', 'Enable Motors', 'enable_motors'],
             ['w', 'Move %m.joints to %n degrees in %n secs', 'moveJoint', 'right hip', 0, 0],
             ['w', 'Play sound: start at %n Hz, finish at %n Hz, over %n seconds', 'play_sound', 261, 523, 1.0],
+
             ['R', 'Input %m.gpios', 'getGPIO', '0'],
             ['R', '%m.motorCurrents motor current', 'get_motor_current', 'left hip'],
             ['R', 'Accelerometer %m.accel', 'get_accel', 'Z axis'],
             ['R', 'Battery voltage', 'get_battery'],
-            [' ', 'Set blocking mode %m.enabled', 'set_blocking_mode', 'enabled'],
+//            [' ', 'Set blocking mode %m.enabled', 'set_blocking_mode', 'enabled'],
             ['w', 'Stop and %m.stopTypes', 'stop', 'return to zero']
         ],
         menus:{
