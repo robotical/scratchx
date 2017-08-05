@@ -20,17 +20,98 @@ function loadScript(url, callback)
 }
 
 loadScript("https://cdn.robotical.io/static/js/marty.js");
-loadScript("https://cdn.robotical.io/static/js/martyScan.js", scanForMartys);
+loadScript("https://cdn.robotical.io/static/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
+
+
+// ----------------------------
+// local IP discovery tool from net.ipcalf.com
+
+var localIP = null;
+
+// NOTE: window.RTCPeerConnection is "not a constructor" in FF22/23
+var RTCPeerConnection = /*window.RTCPeerConnection ||*/ window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+
+if (RTCPeerConnection) (function () {
+    var rtc = new RTCPeerConnection({iceServers:[]});
+    if (1 || window.mozRTCPeerConnection) {      // FF [and now Chrome!] needs a channel/stream to proceed
+        rtc.createDataChannel('', {reliable:false});
+    };
+    
+    rtc.onicecandidate = function (evt) {
+        // convert the candidate to SDP so we can run it through our general parser
+        // see https://twitter.com/lancestout/status/525796175425720320 for details
+        if (evt.candidate) grepSDP("a="+evt.candidate.candidate);
+    };
+    rtc.createOffer(function (offerDesc) {
+        grepSDP(offerDesc.sdp);
+        rtc.setLocalDescription(offerDesc);
+    }, function (e) { console.warn("offer failed", e); });
+    
+    
+    var addrs = Object.create(null);
+    addrs["0.0.0.0"] = false;
+    function updateDisplay(newAddr) {
+        if (newAddr in addrs) return;
+        else addrs[newAddr] = true;
+        var displayAddrs = Object.keys(addrs).filter(function (k) { return addrs[k]; });
+        document.getElementById('list').textContent = displayAddrs.join(" or perhaps ") || "n/a";
+    }
+    
+    function grepSDP(sdp) {
+        var hosts = [];
+        sdp.split('\r\n').forEach(function (line) { // c.f. http://tools.ietf.org/html/rfc4566#page-39
+            if (~line.indexOf("a=candidate")) {     // http://tools.ietf.org/html/rfc4566#section-5.13
+                var parts = line.split(' '),        // http://tools.ietf.org/html/rfc5245#section-15.1
+                    addr = parts[4],
+                    type = parts[7];
+                //if (type === 'host') updateDisplay(addr);
+                console.log("1: addr: " + addr + " || type: " + type);
+                if (type === 'host' && addr != "0.0.0.0" && addr.length < 16){
+                    localIP = addr;
+                }
+            } else if (~line.indexOf("c=")) {       // http://tools.ietf.org/html/rfc4566#section-5.7
+                var parts = line.split(' '),
+                    addr = parts[2];
+                console.log("2: addr: " + addr);
+                if (addr != "0.0.0.0" && addr.length < 16){ localIP = addr;}
+                updateDisplay(addr);
+            }
+        });
+    }
+})();
+// end of local IP discovery
 
 martylist = [];
 martyNames = [];
 var marty = null;
-function scanForMartys(){
-    scanRange("192.168.0", martylist);
-    //setTimeout(registerExtension, 5000, ext);
-    setTimeout(setMarty, 5000);
 
-}    
+function scanForMartys(ip){
+    if (ip === undefined){ 
+        if (localIP != null){
+            var ip_parts = localIP.split(".");
+            ip_parts.pop();
+            ip = ip_parts.join(".");
+            console.log("gonna scan: " + ip);
+        } else {
+            ip = "192.168.0";
+        }
+    }
+    console.log("scanning: " + ip);
+    scanRange(ip, martylist, 5000);
+    setTimeout(checkMartys, 6000, ip);
+}
+
+function checkMartys(ip){
+    if (martylist.length){
+        setMarty();
+    } else if (localIP != null && ip != "192.168.0" && ip != "192.168.1"){
+        scanForMartys("192.168.0");
+    } else if (ip == "192.168.0"){
+        scanForMartys("192.168.1");
+    } else {
+        setMarty();
+    }
+}
 
 var ext2 = {};
 function setMarty(){
