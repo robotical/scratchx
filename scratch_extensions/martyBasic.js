@@ -31,7 +31,7 @@ function registerExtension(){
             ['w', 'Turn %m.leg %n steps', 'turn', 'left', 2],
             ['w', 'Kick %m.leg leg', 'kick', 'left'],
 //            ['w', 'Walk: %n steps, step length: %n, turn amount: %n, step time: %n', 'walk', 2, 40, 10, 1.8],
-//            ['w', 'Lean %m.directions in %n seconds', 'lean', 'left', 1.5],
+            ['w', 'Lean %m.directions in %n seconds', 'lean', 'left', 1.5],
             ['w', 'Stand Straight', 'stand_straight'],
             ['w', 'Eyes %m.eyes', 'eyes', 'normal'],
             ['w', 'Circle Dance %m.leg in %n seconds', 'circle_dance', 'left', 3.0],
