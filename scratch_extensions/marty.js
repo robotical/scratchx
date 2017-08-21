@@ -1,237 +1,363 @@
-// scratchSerialRobot.js
+// Marty the Robot Javascript interface
 
-// inspired by / based on picoExtension.js by Shane M. Clements
+// USAGE
+// instantiate a marty with marty = new Marty(ip, name)
+
+// READING SENSORS
+// to minimise network traffic, only sensors that are queried in js will be read from Marty
+// to reduce operation lag, each sensor will then be read repeatedly and the value stored in a local cache.
+// if the value is not requested within a period of time, the sensor will become idle again
+// use get_sensor("sensor") to request sensor data, if a sensor is idle it will return null, and the api will start querying that sensor
+// calling get_sensor on a recently read sensor will return the value from cache instantly
+
+// CONTROLLING MARTY
+// when the websocket connects to Marty, enable_safeties and lifelike_behaviours will both be enabled
+// lifelike_behaviours can be disabled if required, using lifelike_behaviours(false)
 
 
-(function(ext) {
-    var device = null;
-    var rawData = null;
+// sensor request array
+var req = new Object();
+req["battery"] = new Uint8Array([0x01, 0x01, 0x00]);
+for (let i=0; i<3; i++) {req["acc"+i] = new Uint8Array([0x01, 0x02, i]);}
+for (let i=0; i<8; i++) {req["mc"+i] = new Uint8Array([0x01, 0x03, i]);}
+for (let i=0; i<8; i++) {req["gpio"+i] = new Uint8Array([0x01, 0x04, i]);}
+for (let i=0; i<9; i++) {req["mp"+i] = new Uint8Array([0x01, 0x06, i]);}
+for (let i=0; i<9; i++) {req["enabled"+i] = new Uint8Array([0x01, 0x07, i]);}
+req["chatter"] = new Uint8Array([0x01, 0x05, 0x00]);
+var sensorInt;
 
-    var hostname = prompt("What is Marty's address?", "172.24.1.1");
+function Marty(IP, name){
+  this.ip = IP;
+  this.name = name;
+
+  // codes
+  this.direction = [];
+  this.direction["left"] = 0; this.direction["right"] = 1;
+  this.direction["forward"] = 2; this.direction["backward"] = 3;
+  this.direction["any"] = 4;
+
+  // SENSORS
+  this.sensors = [];
+  // battery
+  this.sensors["battery"] = new Sensor("battery", "battery");
+  // Accelerometer
+  this.sensors["acc0"] = new Sensor("acc0", "acc");
+  this.sensors["acc1"] = new Sensor("acc1", "acc");
+  this.sensors["acc2"] = new Sensor("acc2", "acc");
+  // GPIOs
+  for (let i=0; i<8; i++){
+    var sname = "gpio" + i;
+    this.sensors[sname] = new Sensor(sname, "gpio");
+  }
+  // motor current
+  for (let i=0; i<8; i++){
+    var sname = "mc" + i;
+    this.sensors[sname] = new Sensor(sname, "motorCurrent");
+  }
+  // Motor Enabled bools
+  for (let i=0; i<9; i++){
+    var sname = "enabled" + i;
+    this.sensors[sname] = new Sensor(sname, "enabled");
+  }
+  // motor position
+  for (let i=0; i<9; i++){
+    var sname = "mp" + i;
+    this.sensors[sname] = new Sensor(sname, "motorPosition");
+  }
+  this.sensors["chatter"] = new Sensor("chatter", "chatter");
+
+  // websocket stuff
+  // TODO: generalise to allow other connection types - e.g. i2c for microbit
+  this.socket = new WebSocket("ws://" + IP + ":81/");
+  this.socket.binaryType = 'arraybuffer';
+  this.socket.requests = [];
+  this.socket.parent = this;
 
 
-    var waitingForReply = {
-      setup: function(callback){
-        this.callback = callback;
-        this.timeoutID = window.setTimeout(function(msg) {
-          this.clearCallback();
-        }.bind(this), 2500);
-      },
-
-      clearCallback: function(data){
-        try {
-          rcv = JSON.parse(data);
-          if(rcv.sensorData != undefined){
-            returnval = rcv.sensorData;
-          } else {
-            returnval = data;
-          }
-        } catch(err){
-          returnval = data;
-        }
-
-        
-        if (this.callback != undefined){
-          this.callback(returnval);
-          console.log("callback with data: " + returnval);
-          this.callback = undefined;
-        }
-        if (typeof this.timeoutID === "number") {
-          window.clearTimeout(this.timeoutID);
-          this.timeoutID = undefined;
-        }
-      },
-
+  this.socket.onmessage = function (event){
+    var thisSensor = this.requests[0];
+    this.requests.shift();
+    var buf;
+    switch (this.parent.sensors[thisSensor].type){
+      case "chatter":
+        var chatter = new Uint8Array(event.data);
+        this.parent.sensors[thisSensor].value = String.fromCharCode.apply(null, chatter.slice(4, chatter.length));
+        break;
+      case "motorPosition":
+      case "enabled":
+        buf = new Int8Array(event.data);
+        this.parent.sensors[thisSensor].value = buf[0];
+        break;
+      case "gpio":
+      default:
+        buf = new Float32Array(event.data);
+        this.parent.sensors[thisSensor].value = buf[0];
+        break;
     }
+    this.parent.sensors[thisSensor].lastRead = Date.now();
+    //update(thisSensor, buf[0]);
 
-    ext.resetAll = function(){};
-    ext._deviceConnected = function(){};
+  }
 
-    console.log("hostname: " + hostname);
-
-    ws = new WebSocket("ws://" + hostname + ":5996");
-
-    ws.onopen = function()
-   {
-      // Web Socket is connected, send data using send()
-      //ws.send(cmd);
-      console.log("ws open.");
-      ws.send("scratch started");
-      //console.log("sending cmd: " + cmd);
-      //window.setTimeout(function(){callback()}, 1000);
-   };
-
-   ws.onmessage = function (evt) 
-   { 
-      var received_msg = evt.data;
-      console.log("received: " + evt.data);
-
-      waitingForReply.clearCallback(evt.data);
-   };
+  this.socket.onopen = function () {
+    this.parent.enable_safeties();
+    //this.parent.lifelike_behaviours(true);
+    this.parent.get_firmware_version();
+    this.parent.get_sensor("chatter");
+    //sensorInt = setInterval(update_sensors, 100);
+    this.parent.sensorInt = setInterval(this.parent.update_sensors, 100, this.parent);
+  };
 
 
-    function sendCmd(cmd, callback){
-        if (ws.readyState){
-            ws.send(JSON.stringify(cmd));
-        }
-        waitingForReply.setup(callback);
-
-    }
-/*
-    var ws = new WebSocket("ws://archie3.local:5996");
-
-
-*/
-    ext._shutdown = function() {
-        if(device) device.close();
-        if(poller) poller = clearInterval(poller);
-        device = null;
-    };
-
-    ext._getStatus = function() {
-        //if (!ws.readyState){return {status: 1, msg: 'Websocket connecting'}};
-        return {status: 2, msg: 'websocket connected'};
-    }
-
-    ext.send_message = function(callback){
-        console.log("send command function");
-        //console.log("wsa size: "  + wsa.length);
-        cmd = {"cmd": "celebrate", "id": 12};
-        sendCmd(cmd,callback);
-        //window.setTimeout(function(){callback()}, 1000);
-        //callback();
-    }
-
-    ext.wiggle = function(callback){
-      cmd = {"cmd": "celebrate", "id": 12};
-      sendCmd(cmd,callback);
-    }
-
-    ext.walk_forward = function(numsteps, callback){
-      cmd = {"cmd": "walk", "id": 6, "numsteps": parseInt(numsteps), "steplength": 50, "turn": 0, "movetime": 1600};
-      sendCmd(cmd, callback);
-    }
-
-    ext.walk_backward = function(numsteps, callback){
-      cmd = {"cmd": "walk", "id": 6, "numsteps": parseInt(numsteps), "steplength": -50, "turn": 0, "movetime": 1600};
-      sendCmd(cmd, callback); 
-    }
-
-    ext.turn = function(direction, numsteps, callback){
-      var turn = 40;
-      if (direction == "right" ){
-        turn = -40;
+  this.update_sensors = function(marty){
+  //for (var m in martys){
+    for (var s in marty.sensors){
+      if (marty.sensors[s].lastRequested + 5000 > Date.now()){
+        //console.log("sending request for: " + martys[m].sensors[s].name);
+        marty.socket.requests.push(marty.sensors[s].name);
+        marty.socket.send(req[marty.sensors[s].name]);
       }
-      cmd = {"cmd": "walk", "id": 6, "numsteps": parseInt(numsteps), "steplength": 0, "turn": turn, "movetime": 1300};
-      sendCmd(cmd, callback);
     }
+  }
 
-    ext.hello = function(callback){
-      cmd = {"cmd": "hello", "id": 0};
-      sendCmd(cmd, callback);
+
+  // Sensor functions
+  // request_sensor sends out a socket request to get data for the specified sensor
+  // the returned value will be handled by the socket receive function and stored in the sensor array
+  this.request_sensor = function(sensorName){
+    console.log("sending request for: " + sensorName);
+    this.socket.requests.push(sensorName);
+    this.socket.send(sensorName);
+  }
+
+  // get_sensor will return the value of a sensor, and mark that we are interested in it
+  // if the sensor hasn't been read recently, this function will request a read and return null, 
+  // and the script calling it should check again shortly 
+  this.get_sensor = function(sensorName){
+    this.sensors[sensorName].lastRequested = Date.now();
+    if (this.sensors[sensorName].lastRead + 200 > Date.now()){
+      return this.sensors[sensorName].value;
+    } else {
+      return null;
     }
-
-    ext.kick = function(leg, callback){
-      cmd = {"cmd": "kick", "id": 8, "leg": leg};
-      sendCmd(cmd, callback); 
-    }
-
-    ext.eyes = function(eyes, callback){
-      cmd = {"cmd": "eyes", "id": 7, "eyes": eyes};
-      sendCmd(cmd, callback);
-    }
-
-    ext.lean = function(direction, callback){
-      cmd = {"cmd": "lean", "id": 0, "direction": direction, "amount": 50};
-      sendCmd(cmd, callback);
-    }
-
-    ext.liftLeg = function(leg, callback){
-      cmd = {"cmd": "liftLeg", "id": 10, "leg": leg, "amount": 100};
-      sendCmd(cmd, callback);
-    }
-
-    ext.lowerLeg = function(callback){
-      cmd = {"cmd": "lowerLeg", "id": 11};
-      sendCmd(cmd, callback);
-    }
-
-    ext.moveHip = function(leg, direction, callback){
-      cmd = {"cmd": "moveHip", "id": 2, "leg": leg, "direction": direction, "movetime": 1000, "amount": 30};
-      sendCmd(cmd, callback);
-    }
-
-    ext.switchPressed = function(callback){
-      cmd = {"cmd": "get", "id": 13, "sensor": "gpio", "sensor_id": 0};
-      sendCmd(cmd, callback);
-    }
-
-    ext.moveJoint = function(joint, angle, movetime, callback){
-      cmd = {"cmd": "moveJoint", "id": 12, "joint": joint, "angle": parseInt(angle), "movetime": parseInt(parseFloat(movetime)*1000)};
-      sendCmd(cmd, callback);
-    }
-
-    ext.getGPIO = function(channel, callback){
-      cmd = {"cmd": "get", "id": 13, "sensor": "gpio", "sensor_id": parseInt(channel)};
-      sendCmd(cmd, callback);
-    }
-
-    ext.getMotorCurrent = function(joint, callback){
-      cmd = {"cmd": "get", "id": 13, "sensor": "current", "joint": joint};
-      sendCmd(cmd, callback);
-    }
-
-    ext.getAccel = function(axis, callback){
-      cmd = {"cmd": "get", "id": 13, "sensor": "accelerometer", "axis": axis};
-      sendCmd(cmd, callback);
-    }
-
-    ext.getBattery = function(callback){
-      cmd = {"cmd": "get", "id": 13, "sensor": "battery"};
-      sendCmd(cmd, callback);
-    }
-
-    ext.disableMotors = function(callback){
-      cmd = {"cmd": "stop", "id": 14};
-      sendCmd(cmd, callback);
-    }
+  }
 
 
+  // Command functions
+  this.hello = function(mode){
+    if (mode === undefined || (mode != 0 && mode != 1)){mode = 0x00;}
+    this.socket.send(new Uint8Array([0x02, 0x02, 0x00, 0x00, mode]));
+  }
 
-    var descriptor = {
-        blocks: [
-          ['w', 'Get Ready', 'hello'],
-          ['w', 'Turn off motors', 'disableMotors'],
-          ['w', 'Wiggle', 'wiggle'],
-          ['w', 'Walk %n steps forward', 'walk_forward', 2],
-          ['w', 'Walk %n steps backward', 'walk_backward', 2],
-          ['w', 'Turn %m.leg %n steps', 'turn', 'left', 2],
-          ['w', 'Kick %m.leg leg', 'kick', 'left'],
-          ['w', 'Lean %m.leg', 'lean', 'left'],
-          ['w', 'Lift %m.leg leg', 'liftLeg', 'left'],
-          ['w', 'Lower leg', 'lowerLeg'],
-          ['w', 'Move %m.leg leg %m.sagittal', 'moveHip', 'left', 'forward'],
-          ['w', 'Eyes %m.eyes', 'eyes', 'normal'],
-          ['R', 'Bump switch pressed', 'switchPressed'], 
-          ['w', 'Move %m.joints to %n degrees in %n secs', 'moveJoint', 'right hip', 0, 0],
-          ['R', 'Input %m.gpios', 'getGPIO', '0'],
-          ['R', '%m.motorCurrents motor Current', 'getMotorCurrent', 'right arm'],
-          ['R', 'Accelerometer %m.accel', 'getAccel', 'Z axis'],
-          ['R', 'Battery voltage', 'getBattery'],
+  this.lean = function(dir, amount, move_time){
+    if (amount < -100){amount = -100;} else if (amount > 100){amount = 100;}
+    var cmd1 = new Uint16Array([move_time]);
+    var cmd1a = new Uint8Array(cmd1.buffer);
+    var cmd0 = new Uint8Array([0x02, 0x05, 0x00, 0x02, this.direction[dir], amount]);
+    var cmd = new Uint8Array(cmd0.length + cmd1a.length);
+    cmd.set(cmd0);
+    cmd.set(cmd1a, cmd0.length);
+    this.socket.send(cmd);
+  }
 
-//          ['w', 'Demo', 'demo']
-        ],
-        menus: {
-          leg: ['left', 'right'],
-          eyes: ['normal', 'wide', 'angry', 'excited'],
-          sagittal: ['forward', 'backward'],
-          joints: ['right hip', 'right twist', 'right knee', 'left hip', 'left twist', 'left knee', 'right arm', 'left arm', 'eyes'],
-          gpios: ['0', '1', '2', '3', '4', '5', '6', '7'],
-          motorCurrents: ['right hip', 'right twist', 'right knee', 'left hip', 'left twist', 'left knee', 'right arm', 'left arm'],
-          accel: ['X axis', 'Y axis', 'Z axis'],
-        },
+  this.walk = function(steps, turn, move_time, step_length, side){
+    if (side === undefined){side = this.direction["any"];}
+    var cmd1 = new Uint16Array([move_time]);
+    var cmd1a = new Uint8Array(cmd1.buffer);
+    var cmd0 = new Uint8Array([0x02, 0x07, 0x00, 0x03, steps, turn]);
+    var cmd2 = new Uint8Array([step_length, this.direction[side]]);
+    var cmd = new Uint8Array(cmd0.length + cmd1a.length + cmd2.length);
+    cmd.set(cmd0);
+    cmd.set(cmd1a, cmd0.length);
+    cmd.set(cmd2, cmd0.length+cmd1a.length);
+    this.socket.send(cmd); 
+  }
 
-    };
+  this.kick = function(side, twist, move_time){
+    if (twist < -100){twist = -100;} else if (twist > 100){twist = 100;}
+    if (side != "left" && side != "right"){side = "left";}
+    var cmd1 = new Uint16Array([move_time]);
+    var cmd1a = new Uint8Array(cmd1.buffer);
+    var cmd0 = new Uint8Array([0x02, 0x05, 0x00, 0x05, this.direction[side], twist]);
+    var cmd = new Uint8Array(cmd0.length + cmd1a.length);
+    cmd.set(cmd0);
+    cmd.set(cmd1a, cmd0.length);
+    this.socket.send(cmd);
+  }
 
-    ScratchExtensions.register('SerialRobot', descriptor, ext);
-})({});
+  this.celebrate = function(move_time){
+    var cmd1 = new Uint16Array([move_time]);
+    var cmd1a = new Uint8Array(cmd1.buffer);
+    var cmd0 = new Uint8Array([0x02, 0x03, 0x00, 0x08]);
+    var cmd = new Uint8Array(cmd0.length + cmd1a.length);
+    cmd.set(cmd0);
+    cmd.set(cmd1a, cmd0.length);
+    this.socket.send(cmd); 
+  }
+
+  this.tap_foot = function(side){
+    if (side != "left" && side != "right"){side = "left";}
+    var cmd = new Uint8Array([0x02, 0x02, 0x00, 0x0A, this.direction[side]]);
+    this.socket.send(cmd);
+  }
+
+  this.arms = function(r_angle, l_angle, move_time){
+    if (r_angle < -127){r_angle = -127;} else if (r_angle > 127){r_angle = 127;}
+    if (l_angle < -127){l_angle = -127;} else if (l_angle > 127){l_angle = 127;}
+    var cmd1 = new Uint16Array([move_time]);
+    var cmd1a = new Uint8Array(cmd1.buffer);
+    var cmd0 = new Uint8Array([0x02, 0x05, 0x00, 0x0B, r_angle, l_angle]);
+    var cmd = new Uint8Array(cmd0.length + cmd1a.length);
+    cmd.set(cmd0);
+    cmd.set(cmd1a, cmd0.length);
+    this.socket.send(cmd);
+  }
+
+  this.sidestep = function(side, num_steps, move_time, step_length){
+    if (side != "left" && side != "right"){side = "left";}
+    var cmd1 = new Uint16Array([move_time]);
+    var cmd1a = new Uint8Array(cmd1.buffer);
+    var cmd0 = new Uint8Array([0x02, 0x06, 0x00, 0x0E, this.direction[side], num_steps]);
+    var cmd2 = new Uint8Array([step_length]);
+    var cmd = new Uint8Array(cmd0.length + cmd1a.length + cmd2.length);
+    cmd.set(cmd0);
+    cmd.set(cmd1a, cmd0.length);
+    cmd.set(cmd2, cmd0.length+cmd1a.length);
+    this.socket.send(cmd); 
+  }
+
+  this.stand_straight = function(move_time){
+    var cmd1 = new Uint16Array([move_time]);
+    var cmd1a = new Uint8Array(cmd1.buffer);
+    var cmd0 = new Uint8Array([0x02, 0x03, 0x00, 0x0F]);
+    var cmd = new Uint8Array(cmd0.length + cmd1a.length);
+    cmd.set(cmd0);
+    cmd.set(cmd1a, cmd0.length);
+    this.socket.send(cmd); 
+  }
+
+  this.play_sound = function(freq_start, freq_end, duration){
+    var cmd1 = new Uint16Array([freq_start, freq_end, duration]);
+    var cmd1a = new Uint8Array(cmd1.buffer);
+    var cmd0 = new Uint8Array([0x02, 0x07, 0x00, 0x10]);
+    var cmd = new Uint8Array(cmd0.length + cmd1a.length);
+    cmd.set(cmd0);
+    cmd.set(cmd1a, cmd0.length);
+    this.socket.send(cmd);
+  }
+
+  this.stop = function(stop_type){
+    this.socket.send(new Uint8Array([0x02, 0x02, 0x00, 0x11, stop_type]));
+  }
+
+  this.move_joint = function(jointID, position, move_time){
+    if (position < -100){position = -100;} else if (position > 100){position = 100;}
+    var cmd1 = new Uint16Array([move_time]);
+    var cmd1a = new Uint8Array(cmd1.buffer);
+    var cmd0 = new Uint8Array([0x02, 0x05, 0x00, 0x12, jointID, position]);
+    var cmd = new Uint8Array(cmd0.length + cmd1a.length);
+    cmd.set(cmd0);
+    cmd.set(cmd1a, cmd0.length);
+    this.socket.send(cmd);
+  }
+
+  this.enable_motors = function(enable_mode){
+    if (enable_mode === undefined || (enable_mode != 0 && enable_mode != 1)){enable_mode = 0;}
+    this.socket.send(new Uint8Array([0x02, 0x04, 0x00, 0x13, 0xFF, 0xFF, enable_mode]));
+  }
+
+  this.disable_motors = function(disable_mode){
+    if (disable_mode === undefined || (disable_mode != 0 && disable_mode != 1)){disable_mode = 0;}
+    this.socket.send(new Uint8Array([0x02, 0x04, 0x00, 0x14, 0xFF, 0xFF, disable_mode]));
+  }
+
+  this.fall_protection = function(enabled){
+    if (enabled === undefined || (enabled != true && enabled != false)){enabled = true;}
+    this.socket.send(new Uint8Array([0x02, 0x02, 0x00, 0x15, enabled]));
+  }
+
+  this.motor_protection = function(enabled){
+    if (enabled === undefined || (enabled != true && enabled != false)){enabled = true;}
+    this.socket.send(new Uint8Array([0x02, 0x02, 0x00, 0x16, enabled]));
+  }
+
+  this.low_battery_cutoff = function(enabled){
+    if (enabled === undefined || (enabled != true && enabled != false)){enabled = true;}
+    this.socket.send(new Uint8Array([0x02, 0x02, 0x00, 0x17, enabled]));    
+  }
+
+  this.buzz_prevention = function(enabled){
+    if (enabled === undefined || (enabled != true && enabled != false)){enabled = true;}
+    this.socket.send(new Uint8Array([0x02, 0x02, 0x00, 0x18, enabled]));    
+  }  
+
+  this.set_io_type = function(io_number, io_type){
+    this.socket.send(new Uint8Array([0x02, 0x03, 0x00, 0x19, io_number, io_type]));
+  }
+
+  this.io_write = function(io_number, value){
+    var cmd1 = new Float32Array([value]);
+    var cmd1a = new Uint8Array(cmd1.buffer);
+    var cmd0 = new Uint8Array([0x02, 0x06, 0x00, 0x1A, io_number]);
+    var cmd = new Uint8Array(cmd0.length + cmd1a.length);
+    cmd.set(cmd0);
+    cmd.set(cmd1a, cmd0.length);
+    this.socket.send(cmd);    
+  }
+
+  this.i2c_write = function(bytes){
+    data = new Uint8Array(bytes);
+    var cmd0 = new Uint8Array([0x02, data.length, 0x00, 0x1B]);
+    var cmd = new Uint8Array(cmd0.length + data.length);
+    cmd.set(cmd0);
+    cmd.set(data, cmd0.length);
+    this.socket.send(cmd); 
+  }
+
+  this.circle_dance = function(side, move_time){
+    if (side != "left" && side != "right"){side = "left";}
+    var cmd1 = new Uint16Array([move_time]);
+    var cmd1a = new Uint8Array(cmd1.buffer);
+    var cmd0 = new Uint8Array([0x02, 0x04, 0x00, 0x1C, this.direction[side]]);
+    var cmd = new Uint8Array(cmd0.length + cmd1a.length);
+    cmd.set(cmd0);
+    cmd.set(cmd1a, cmd0.length);
+    this.socket.send(cmd);
+  }
+
+  this.lifelike_behaviours = function(enabled){
+    if (enabled === undefined || (enabled != true && enabled != false)){enabled = true;}
+    this.socket.send(new Uint8Array([0x02, 0x02, 0x00, 0x1D, enabled]));    
+  }
+
+  this.enable_safeties = function(){
+    this.socket.send(new Uint8Array([0x02, 0x01, 0x00, 0x1E]));
+  }
+
+  this.set_lean_amount = function(amount){
+    amount = min(200, max(0, amount));
+    this.socket.send(new Uint8Array([0x02, 0x03, 0x00, 0x1F, 0x00, amount]));
+  }
+
+  this.get_firmware_version = function(){
+    this.socket.send(new Uint8Array([0x02, 0x01, 0x00, 0x20]));
+  }
+
+  this.clear_calibration = function(){
+    this.socket.send(new Uint8Array([0x02, 0x01, 0x00, 0xFE])); 
+  }
+
+  this.save_calibration = function(){
+   this.socket.send(new Uint8Array([0x02, 0x01, 0x00, 0xFF]));  
+  }  
+}
+
+function Sensor(name, type){
+  this.name = name;
+  this.type = type;
+  this.lastRead = 0;
+  this.lastRequested = 0;
+  this.value = 0;
+}
+
+martys = {}
