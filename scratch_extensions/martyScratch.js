@@ -84,6 +84,8 @@ if (RTCPeerConnection) (function () {
 martylist = [];
 martyNames = [];
 var marty = null;
+var checkTimeout;
+var scanResults = 0;
 
 function scanForMartys(ip){
     if (ip === undefined){ 
@@ -97,11 +99,22 @@ function scanForMartys(ip){
         }
     }
     console.log("scanning: " + ip);
-    scanRange(ip, martylist, 5000);
-    setTimeout(checkMartys, 6000, ip);
+    scanRange(ip, martylist, 30000);
+    checkTimeout = setTimeout(checkResults, 1000, ip);
+    setTimeout(checkMartys, 31000, ip);
+}
+
+function checkResults(ip){
+    console.log("scan progress: " + scanResults + "/255"); 
+    if (scanResults < 254){
+        checkTimeout = setTimeout(checkResults, 1000, ip);
+    } else {
+        checkMartys(ip);
+    }
 }
 
 function checkMartys(ip){
+    clearTimeout(checkTimeout);
     if (martylist.length){
         setMarty();
     } else if (localIP != null && ip != "192.168.0" && ip != "192.168.1"){
@@ -112,6 +125,8 @@ function checkMartys(ip){
         setMarty();
     }
 }
+
+
 
 var ext2 = {};
 function setMarty(){

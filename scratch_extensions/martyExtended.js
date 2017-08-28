@@ -18,6 +18,7 @@ function loadScript(url, callback)
 var ext = {};
 loadScript("https://robotical.github.io/scratchx/scratch_extensions/martyScratch.js", registerExtension);
 
+
 function registerExtension(){
     // Block and block menu descriptions
     var descriptor = {
