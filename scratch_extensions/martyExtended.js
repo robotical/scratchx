@@ -19,6 +19,7 @@ var ext = {};
 loadScript("https://robotical.github.io/scratchx/scratch_extensions/martyScratch.js", registerExtension);
 
 
+
 function registerExtension(){
     // Block and block menu descriptions
     var descriptor = {
@@ -30,6 +31,7 @@ function registerExtension(){
             ['w', 'Walk %n steps forward', 'walk_forward', 2],
             ['w', 'Walk %n steps backward', 'walk_backward', 2],
             ['w', 'Turn %m.leg %n steps', 'turn', 'left', 2],
+            ['w', 'Sidestep %m.leg for %n step(s), step time: %n s, step length: %n', 'sidestep', 'left', 1, 1.5, 50],
             ['w', 'Kick %m.leg leg', 'kick', 'left'],
             ['w', 'Walk: %n steps, step length: %n, turn amount: %n, step time: %n', 'walk', 2, 40, 10, 1.8],
             ['w', 'Lean %m.directions in %n seconds', 'lean', 'left', 1.5],

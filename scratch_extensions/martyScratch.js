@@ -188,6 +188,7 @@ function select_marty(ip, name){
     }
 
     ext.hello = function(callback) {
+        marty.enable_motors();
         marty.hello(1);
         if (ext.blocking_mode === true){
             setTimeout(callback, 2000);
@@ -288,6 +289,20 @@ function select_marty(ip, name){
         marty.move_joint(8, eyepos[position], 100);
         if (ext.blocking_mode === true){
             setTimeout(callback, 100);  
+        } else {
+            callback();
+        }
+    }
+
+    ext.sidestep_basic = function(side, num_steps, callback){
+        ext.sidestep(side, num_steps, 1.5, 50, callback);
+        return;
+    }
+
+    ext.sidestep = function(side, num_steps, step_time, step_length, callback){
+        marty.sidestep(side, parseInt(num_steps), step_time*1000, parseInt(step_length));
+        if (ext.blocking_mode === true){
+            setTimeout(callback, num_steps*step_time*1000);
         } else {
             callback();
         }
@@ -470,19 +485,26 @@ function selectorExtension(ext){
     };
 
     var mlist = [];
+    var addMartyTries = 0;
     ext.addMartyCallback = function(callback){
         if (mlist.length > 0){
             select_marty(mlist[0][0], mlist[0][1]);
             callback(true);
         } else {
-            callback(false);
+            if (addMartyTries < 15){
+                addMartyTries++;
+                setTimeout(ext.addMartyCallback, 200, callback);
+            } else {
+                callback(false);
+            }
         }
     }
 
     ext.addMartyByIP = function(ip, callback) {
         mlist = [];
+        addMartyTries = 0;
         sendRequest(ip, mlist);
-        setTimeout(ext.addMartyCallback, 3000, callback );
+        setTimeout(ext.addMartyCallback, 200, callback );
     };
 
     ext.add_marty_by_name = function(name, callback){
