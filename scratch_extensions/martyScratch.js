@@ -19,7 +19,7 @@ function loadScript(url, callback)
     head.appendChild(script);
 }
 
-loadScript("https://cdn.robotical.io/static/js/marty.js");
+loadScript("https://cdn.robotical.io/static/js/marty.js?v=20170915");
 loadScript("https://cdn.robotical.io/static/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
 
 
