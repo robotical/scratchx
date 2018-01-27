@@ -16,7 +16,8 @@ function loadScript(url, callback)
 }
 
 var ext = {};
-loadScript("https://robotical.github.io/scratchx/scratch_extensions/martyScratch.js?v=20170915", registerExtension);
+//loadScript("/scratch_extensions/martyScratch.js?v=20180127", registerExtension);
+loadScript("https://robotical.github.io/scratchx/scratch_extensions/martyScratch.js?v=20180127", registerExtension);
 
 
 
@@ -47,6 +48,7 @@ function registerExtension(){
             ['R', 'Input %m.gpios', 'getGPIO', '0'],
             ['R', '%m.motorCurrents motor current', 'get_motor_current', 'left hip'],
             ['R', 'Accelerometer %m.accel', 'get_accel', 'Z axis'],
+            ['R', 'Proximity Sensor', 'get_prox_sensor'],
             ['R', 'Battery voltage', 'get_battery'],
             [' ', 'Set blocking mode %m.enabled', 'set_blocking_mode', 'enabled'],
             ['w', 'Stop and %m.stopTypes', 'stop', 'return to zero']

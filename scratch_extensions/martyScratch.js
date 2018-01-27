@@ -19,8 +19,10 @@ function loadScript(url, callback)
     head.appendChild(script);
 }
 
-loadScript("https://cdn.robotical.io/static/js/marty.js?v=20170915");
+loadScript("https://cdn.robotical.io/static/js/marty.js?v=20171208");
+//loadScript("/js/martyjs.js?v=20171208");
 loadScript("https://cdn.robotical.io/static/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
+//loadScript("/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
 
 
 // ----------------------------
@@ -81,11 +83,14 @@ if (RTCPeerConnection) (function () {
 })();
 // end of local IP discovery
 
+var selectorTitle = 'Marty Scanner';
 martylist = [];
 martyNames = [];
 var marty = null;
+var scanComplete = false;
 var checkTimeout;
 var scanResults = 0;
+var ext2 = {};
 
 function scanForMartys(ip){
     if (ip === undefined){ 
@@ -106,6 +111,20 @@ function scanForMartys(ip){
 
 function checkResults(ip){
     console.log("scan progress: " + scanResults + "/255"); 
+    if (martyNames.length != martylist.length){
+        // new Martys found. redo names list and reload selector extension
+        martyNames = [];
+        for (m in martylist){
+            martyNames.push(martylist[m][1]);
+        }
+        ScratchExtensions.unregister(selectorTitle);
+        selectorExtension(ext2);
+
+        // if this is the first Marty found, we select it
+        if (martylist.length == 1){
+            marty = new Marty(martylist[0][0], martylist[0][1]);
+        }
+    }
     if (scanResults < 254){
         checkTimeout = setTimeout(checkResults, 1000, ip);
     } else {
@@ -116,19 +135,23 @@ function checkResults(ip){
 function checkMartys(ip){
     clearTimeout(checkTimeout);
     if (martylist.length){
-        setMarty();
+        scanComplete = true;
+        //setMarty();
     } else if (localIP != null && ip != "192.168.0" && ip != "192.168.1"){
         scanForMartys("192.168.0");
     } else if (ip == "192.168.0"){
         scanForMartys("192.168.1");
     } else {
-        setMarty();
+        scanComplete = true;
+        martyNames.push('No Martys Found :-(');
+        ScratchExtensions.unregister(selectorTitle);
+        selectorExtension(ext2);
+        //setMarty();
     }
 }
 
-
-
-var ext2 = {};
+// deprecated
+/*
 function setMarty(){
     if (martylist.length === 1){
         marty = new Marty(martylist[0][0], martylist[0][1]);
@@ -144,6 +167,9 @@ function setMarty(){
     }
     
 }
+*/
+
+selectorExtension(ext2);
 
 function select_marty(ip, name){
     if (marty != null){
@@ -151,6 +177,7 @@ function select_marty(ip, name){
     }
     marty = new Marty(ip, name);
 }
+
 
 //(function(ext) {
     // Cleanup function when the extension is unloaded
@@ -412,6 +439,15 @@ function select_marty(ip, name){
         ext.get_sensor("mc" + jointID[joint_name], callback);
     }
 
+    ext.get_prox_sensor = function(callback){
+        var response = marty.get_sensor("prox");
+        if (response === null){
+            setTimeout(ext.get_prox_sensor, 100, callback);
+        } else {
+            callback(response);
+        }
+    }
+
     ext.set_blocking_mode = function(enabled){
         if (enabled === 'enabled'){
             ext.blocking_mode = true;
@@ -481,7 +517,15 @@ function selectorExtension(ext){
     // Status reporting code
     // Use this to report missing hardware, plugin or unsupported browser
     ext._getStatus = function() {
-        return {status: 2, msg: 'Ready'};
+        if (scanComplete === true){
+            if (martylist.length){
+                return {status: 2, msg: 'Found ' + martylist.length + 'Martys'};
+            } else {
+                return {status: 0, msg: 'Scan complete. No Martys Found :-('};
+            }
+        } else {
+            return {status: 1, msg: 'Scanning...'};
+        }
     };
 
     var mlist = [];
@@ -516,12 +560,20 @@ function selectorExtension(ext){
         setTimeout(callback, 500);
     }
 
+    ext.rescan = function(name, callback){
+        scanComplete = false;
+        martylist = [];
+        scanForMartys();
+        callback();
+    }
+
     // Block and block menu descriptions
     var descriptor = {
         blocks: [
             // Block type, block name, function name
             ['w', 'Select Marty %m.martys', 'add_marty_by_name', martyNames[0]],
             ['w', 'Select Marty on IP: %s', 'addMartyByIP', '192.168.0.10'],
+            ['w', 'Rescan', 'rescan']
         ],
         menus: {
             martys : martyNames,
@@ -529,5 +581,5 @@ function selectorExtension(ext){
     };
 
     // Register the extension
-    ScratchExtensions.register('Marty Selector', descriptor, ext);
+    ScratchExtensions.register(selectorTitle, descriptor, ext);
 }
