@@ -120,8 +120,10 @@ function checkResults(ip){
         ScratchExtensions.unregister(selectorTitle);
         selectorExtension(ext2);
 
+        console.log("martylist size: " + martylist.length);
         // if this is the first Marty found, we select it
-        if (martylist.length == 1){
+        if (marty === null){
+            console.log("First Marty, selecting " + martylist[0][1] + " on " + martylist[0][1]);
             marty = new Marty(martylist[0][0], martylist[0][1]);
         }
     }
@@ -137,9 +139,11 @@ function checkMartys(ip){
     if (martylist.length){
         scanComplete = true;
         //setMarty();
-    } else if (localIP != null && ip != "192.168.0" && ip != "192.168.1"){
+    } else if (localIP != null && ip != "192.168.0" && ip != "192.168.1" && ip != "172.24.1"){
         scanForMartys("192.168.0");
     } else if (ip == "192.168.0"){
+        scanForMartys("172.24.1");
+    } else if (ip = "172.24.1"){
         scanForMartys("192.168.1");
     } else {
         scanComplete = true;
@@ -560,11 +564,10 @@ function selectorExtension(ext){
         setTimeout(callback, 500);
     }
 
-    ext.rescan = function(name, callback){
+    ext.rescan = function(name){
         scanComplete = false;
         martylist = [];
         scanForMartys();
-        callback();
     }
 
     // Block and block menu descriptions
@@ -573,7 +576,7 @@ function selectorExtension(ext){
             // Block type, block name, function name
             ['w', 'Select Marty %m.martys', 'add_marty_by_name', martyNames[0]],
             ['w', 'Select Marty on IP: %s', 'addMartyByIP', '192.168.0.10'],
-            ['w', 'Rescan', 'rescan']
+            [' ', 'Rescan', 'rescan']
         ],
         menus: {
             martys : martyNames,
