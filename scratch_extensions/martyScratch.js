@@ -104,9 +104,9 @@ function scanForMartys(ip){
         }
     }
     console.log("scanning: " + ip);
-    scanRange(ip, martylist, 30000);
+    scanRange(ip, martylist, 15000);
     checkTimeout = setTimeout(checkResults, 1000, ip);
-    setTimeout(checkMartys, 31000, ip);
+    setTimeout(checkMartys, 16000, ip);
 }
 
 function checkResults(ip){
