@@ -142,8 +142,8 @@ function checkMartys(ip){
     } else if (localIP != null && ip != "192.168.0" && ip != "192.168.1" && ip != "172.24.1"){
         scanForMartys("192.168.0");
     } else if (ip == "192.168.0"){
-        scanForMartys("172.24.1");
-    } else if (ip = "172.24.1"){
+    //    scanForMartys("172.24.1");
+    //} else if (ip = "172.24.1"){
         scanForMartys("192.168.1");
     } else {
         scanComplete = true;
@@ -565,9 +565,13 @@ function selectorExtension(ext){
     }
 
     ext.rescan = function(name){
-        scanComplete = false;
-        martylist = [];
-        scanForMartys();
+        if (scanComplete === true){
+            scanComplete = false;
+            martylist = [];
+            scanForMartys();
+        } else {
+            alert("Scanning not yet complete. Please wait for scanning to finish before re-scanning");
+        }
     }
 
     // Block and block menu descriptions
