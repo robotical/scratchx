@@ -367,7 +367,7 @@ function select_marty(ip, name){
         } else {
             joint = 'right knee';
         }
-        marty.move_joint(jointID[joint], 90*mult, 750);
+        marty.move_joint(jointID[joint], 80*mult, 750);
         setTimeout(callback, 750);
     }
 
