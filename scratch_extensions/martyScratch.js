@@ -35,9 +35,16 @@ var RTCPeerConnection = /*window.RTCPeerConnection ||*/ window.webkitRTCPeerConn
 
 if (RTCPeerConnection) (function () {
     var rtc = new RTCPeerConnection({iceServers:[]});
-    if (1 || window.mozRTCPeerConnection) {      // FF [and now Chrome!] needs a channel/stream to proceed
-        rtc.createDataChannel('', {reliable:false});
-    };
+
+    // Edge browser has partial implementation and currently (2018-03-07) no createDataChannel
+    try{
+        if (1 || window.mozRTCPeerConnection) {      // FF [and now Chrome!] needs a channel/stream to proceed
+            rtc.createDataChannel('', {reliable:false});
+        };
+    }
+    catch(err){
+        console.log(err.message);
+    }
     
     rtc.onicecandidate = function (evt) {
         // convert the candidate to SDP so we can run it through our general parser
