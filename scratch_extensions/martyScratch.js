@@ -19,9 +19,9 @@ function loadScript(url, callback)
     head.appendChild(script);
 }
 
-loadScript("https://cdn.robotical.io/static/js/marty.js?v=20171208");
-//loadScript("/js/martyjs.js?v=20171208");
-loadScript("https://cdn.robotical.io/static/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
+loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180403");
+//loadScript("/js/marty.js?v=20180330");
+loadScript("https://robotical.github.io/scratchx/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
 //loadScript("/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
 
 
@@ -198,7 +198,7 @@ function select_marty(ip, name){
     // Use this to report missing hardware, plugin or unsupported browser
     ext._getStatus = function() {
         if (marty != null){
-            return {status: 2, msg: 'Ready'};
+            return {status: 2, msg: 'Connected to ' + marty.name};
         } else {
             return {status: 1, msg: 'Scanning for Martys...'};
         }
