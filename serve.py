@@ -27,8 +27,11 @@ httpd = socketserver.TCPServer(("", PORT), Handler)
 print("Serving on http://localhost:%d" % PORT)
 
 webbrowser.open('http://localhost:%d/?url=http://localhost:%d/scratch_extensions/martyExtended.js#scratch' % (PORT, PORT))
+
 try:
     httpd.serve_forever()
 except KeyboardInterrupt:
     print("bye!")
-    sys.exit(0)
+
+httpd.server_close()
+sys.exit(0)
