@@ -1,3 +1,10 @@
+# Packaging with Python
+env/
+dist/
+build/
+__pycache__/
+
+# Editor and Other
 /.idea
 .sass-cache
 .DS_Store
