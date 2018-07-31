@@ -19,8 +19,8 @@ function loadScript(url, callback)
     head.appendChild(script);
 }
 
-loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180403");
-//loadScript("/js/marty.js?v=20180330");
+loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180803");
+//loadScript("/js/marty.js?v=20180730");
 loadScript("https://robotical.github.io/scratchx/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
 //loadScript("/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
 
@@ -98,6 +98,9 @@ var scanComplete = false;
 var checkTimeout;
 var scanResults = 0;
 var ext2 = {};
+var direct = false;
+var direct_connect_fail = false;
+var intStateMonitor = null;
 
 function scanForMartys(ip){
     if (ip === undefined){ 
@@ -187,6 +190,36 @@ function select_marty(ip, name){
         marty.socket.close();
     }
     marty = new Marty(ip, name);
+    intStateMonitor = setInterval(stateMonitor, 100);
+}
+
+function stateMonitor(){
+    if (marty == null){return;}
+
+    var joints = ['Left hip', 'Left twist', 'Left knee', 'Right hip', 'Right twist', 'Right knee', 'Left arm', 'Right arm', 'Eyes'];
+    var i = 0;
+    var disabledJoints = [];
+    var chatter = marty.get_sensor('chatter');
+    var goodData = true;
+
+    for (i=0; i<9; i++){        
+        //var sname = "mp" + i;
+        var enabled = marty.get_sensor("enabled" + i);
+        //var mp = marty.get_sensor(sname);
+        if (enabled == false){
+          disabledJoints.push(i);
+        }
+        if (enabled === null){ goodData = false;}
+    }
+
+    var battery = marty.get_sensor("battery");
+    //console.log("battery: " + battery);
+
+    if (direct && !marty.alive && !direct_connect_fail){
+        direct_connect_fail = true;
+        ScratchExtensions.unregister(selectorTitle);
+        selectorExtension(ext2);
+    } 
 }
 
 
@@ -198,7 +231,11 @@ function select_marty(ip, name){
     // Use this to report missing hardware, plugin or unsupported browser
     ext._getStatus = function() {
         if (marty != null){
-            return {status: 2, msg: 'Connected to ' + marty.name};
+            if (marty.alive){
+                return {status: 2, msg: 'Connected to ' + marty.name};
+            } else {
+                return {status: 1, msg: 'Connection lost. Attempting to Reconnect'}
+            }
         } else {
             return {status: 1, msg: 'Scanning for Martys...'};
         }
@@ -528,14 +565,22 @@ function selectorExtension(ext){
     // Status reporting code
     // Use this to report missing hardware, plugin or unsupported browser
     ext._getStatus = function() {
-        if (scanComplete === true){
-            if (martylist.length){
-                return {status: 2, msg: 'Found ' + martylist.length + 'Martys'};
+        if (marty == null){
+            if (scanComplete === true){
+                if (martylist.length){
+                    return {status: 2, msg: 'Found ' + martylist.length + 'Martys'};
+                } else {
+                    return {status: 0, msg: 'Scan complete. No Martys Found :-('};
+                }
             } else {
-                return {status: 0, msg: 'Scan complete. No Martys Found :-('};
+                return {status: 1, msg: 'Scanning...'};
             }
         } else {
-            return {status: 1, msg: 'Scanning...'};
+            if (marty.alive){
+                return {status: 2,  msg: 'Connected to ' + marty.ip};
+            } else {
+                return {status: 1, msg: 'Connection lost. Trying to reconnect to ' + marty.ip};
+            }
         }
     };
 
@@ -571,8 +616,32 @@ function selectorExtension(ext){
         setTimeout(callback, 500);
     }
 
-    ext.add_setup_marty = function(name){
+    ext.direct_connect = function(callback){
+        direct = true;
         select_marty("192.168.4.1", "Marty", -1);
+        ScratchExtensions.unregister(selectorTitle);
+        selectorExtension(ext2);
+        setTimeout(function(){
+            if (marty.alive){
+                //alert("connected");
+                callback(true);
+            } else {
+                alert("did not connect. Please check you are connected to a Marty Setup wifi network");
+                callback(false);
+            }
+            
+        }, 1500);
+    }
+
+    ext.reset_wifi = function(callback){
+        if (marty.alive){
+            marty.reset_wifi();
+            callback(true);
+        } else {
+            alert("Not currently connected. Please try again when Marty is connected");
+            callback(false);
+        }
+        
     }
 
     ext.rescan = function(name){
@@ -591,13 +660,42 @@ function selectorExtension(ext){
             // Block type, block name, function name
             ['w', 'Select Marty %m.martys', 'add_marty_by_name', martyNames[0]],
             ['w', 'Select Marty on IP: %s', 'addMartyByIP', '192.168.0.10'],
-            [' ', 'Rescan', 'rescan']
+            [' ', 'Rescan', 'rescan'],
+            [' ', 'Direct Connect', 'direct_connect']
         ],
         menus: {
             martys : martyNames,
         }
     };
+    var descriptor_direct = {
+        blocks: [
+            // Block type, block name, function name
+            ['w', 'Direct Connect', 'direct_connect'],
+            ['w', 'Reset WiFi', 'reset_wifi']
+        ],
+        menus: {
+            martys : martyNames,
+        }
+    };
+    var descriptor_direct_reset = {
+        blocks: [
+            // Block type, block name, function name
+            ['w', 'Direct Connect', 'direct_connect'],
+            ['w', 'Connection issues? Reset WiFi', 'reset_wifi']
+        ],
+        menus: {
+            martys : martyNames,
+        }
+    };        
+    
 
     // Register the extension
-    ScratchExtensions.register(selectorTitle, descriptor, ext);
+    if (!direct){
+        ScratchExtensions.register(selectorTitle, descriptor, ext);
+    } else if (direct_connect_fail){
+        ScratchExtensions.register(selectorTitle, descriptor_direct_reset, ext);
+    } else {
+        ScratchExtensions.register(selectorTitle, descriptor_direct, ext);
+    
+    }
 }
