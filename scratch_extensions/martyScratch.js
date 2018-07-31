@@ -150,7 +150,7 @@ function checkMartys(ip){
         scanForMartys("192.168.0");
     } else if (ip == "192.168.0"){
     //    scanForMartys("172.24.1");
-    //} else if (ip = "172.24.1"){
+    //} else if (ip == "172.24.1"){
         scanForMartys("192.168.1");
     } else {
         scanComplete = true;
@@ -571,6 +571,10 @@ function selectorExtension(ext){
         setTimeout(callback, 500);
     }
 
+    ext.add_setup_marty = function(name){
+        select_marty("192.168.4.1", "Marty", -1);
+    }
+
     ext.rescan = function(name){
         if (scanComplete === true){
             scanComplete = false;
@@ -587,7 +591,8 @@ function selectorExtension(ext){
             // Block type, block name, function name
             ['w', 'Select Marty %m.martys', 'add_marty_by_name', martyNames[0]],
             ['w', 'Select Marty on IP: %s', 'addMartyByIP', '192.168.0.10'],
-            [' ', 'Rescan', 'rescan']
+            [' ', 'Rescan', 'rescan'],
+            [' ', 'Connect to 192.168.4.1', 'add_setup_marty']
         ],
         menus: {
             martys : martyNames,

@@ -151,7 +151,7 @@ function checkMartys(ip){
         scanForMartys("192.168.0");
     } else if (ip == "192.168.0"){
     //    scanForMartys("172.24.1");
-    //} else if (ip = "172.24.1"){
+    //} else if (ip == "172.24.1"){
         scanForMartys("192.168.1");
     } else {
         scanComplete = true;
