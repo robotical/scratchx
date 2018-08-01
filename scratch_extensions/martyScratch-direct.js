@@ -190,6 +190,8 @@ function select_marty(ip, name){
         marty.socket.close();
     }
     marty = new Marty(ip, name);
+    // we might get a lot of data through, so increase the requests limit to prevent unnecessary timeouts
+    marty.requests_limit = 500;
     intStateMonitor = setInterval(stateMonitor, 100);
 }
 
