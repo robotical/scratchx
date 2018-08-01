@@ -1,0 +1,376 @@
+<html>
+<head>
+    <title>Marty the Robot Calibration</title>
+
+<script src="/js/marty.js?v20170915"></script>
+
+<script src="jquery.min.js"></script>
+<script src="/js/martyScan.js?v20170827"></script>
+<script type="text/javascript">
+
+// local IP discovery tool from net.ipcalf.com
+
+var localIP = null;
+
+// NOTE: window.RTCPeerConnection is "not a constructor" in FF22/23
+var RTCPeerConnection = /*window.RTCPeerConnection ||*/ window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+
+if (RTCPeerConnection) (function () {
+    var rtc = new RTCPeerConnection({iceServers:[]});
+    // Edge browser has partial implementation and currently (2018-03-07) no createDataChannel
+    try{
+        if (1 || window.mozRTCPeerConnection) {      // FF [and now Chrome!] needs a channel/stream to proceed
+            rtc.createDataChannel('', {reliable:false});
+        };
+    }
+    catch(err){
+        console.log(err.message);
+    }
+    
+    rtc.onicecandidate = function (evt) {
+        // convert the candidate to SDP so we can run it through our general parser
+        // see https://twitter.com/lancestout/status/525796175425720320 for details
+        if (evt.candidate) grepSDP("a="+evt.candidate.candidate);
+    };
+    rtc.createOffer(function (offerDesc) {
+        grepSDP(offerDesc.sdp);
+        rtc.setLocalDescription(offerDesc);
+    }, function (e) { console.warn("offer failed", e); });
+    
+    
+    var addrs = Object.create(null);
+    addrs["0.0.0.0"] = false;
+    function updateDisplay(newAddr) {
+        if (newAddr in addrs) return;
+        else addrs[newAddr] = true;
+        var displayAddrs = Object.keys(addrs).filter(function (k) { return addrs[k]; });
+        document.getElementById('list').textContent = displayAddrs.join(" or perhaps ") || "n/a";
+    }
+    
+    function grepSDP(sdp) {
+        var hosts = [];
+        sdp.split('\r\n').forEach(function (line) { // c.f. http://tools.ietf.org/html/rfc4566#page-39
+            if (~line.indexOf("a=candidate")) {     // http://tools.ietf.org/html/rfc4566#section-5.13
+                var parts = line.split(' '),        // http://tools.ietf.org/html/rfc5245#section-15.1
+                    addr = parts[4],
+                    type = parts[7];
+                //if (type === 'host') updateDisplay(addr);
+                console.log("1: addr: " + addr + " || type: " + type);
+                if (type === 'host' && addr != "0.0.0.0" && addr.length < 16){
+                    localIP = addr;
+                }
+            } else if (~line.indexOf("c=")) {       // http://tools.ietf.org/html/rfc4566#section-5.7
+                var parts = line.split(' '),
+                    addr = parts[2];
+                console.log("2: addr: " + addr);
+                if (addr != "0.0.0.0" && addr.length < 16){ localIP = addr;}
+                updateDisplay(addr);
+            }
+        });
+    }
+})();
+
+
+
+
+martylist = [];
+var scanResults = 0;
+var checkTimeout;
+function scanForMartys(ip, timeout){
+
+    if (ip === undefined || ip === null){ 
+        if (localIP != null){
+            var ip_parts = localIP.split(".");
+            ip_parts.pop();
+            ip = ip_parts.join(".");
+            console.log("gonna scan: " + ip);
+        } else {
+            document.getElementById("ipWarning").style.display = "inline";
+            ip = "192.168.0";
+        }
+    }
+    if (timeout === undefined){timeout = 20000;}
+    $('#MartyList').empty();
+    $('#MartyList').append("<span class=\"bitbigger tt muted\">Scanning for Martys &nbsp; <i class=\"fa fa-spin fa-spinner\"></i></span>");
+    console.log("scanning: " + ip);
+    scanRange(ip, martylist, timeout);
+    checkTimeout = setTimeout(checkResults, 1000, ip);
+    //setTimeout(listMartys, timeout+1000, ip);
+}
+
+function checkResults(ip){
+    $('#MartyList').empty();
+    $('#MartyList').append("<span class=\"bitbigger tt muted\">Scanning for Martys (" + ip +") &nbsp; <i class=\"fa fa-spin fa-spinner\"></i><br />" + Math.round(scanResults*100/255) + "%</span><p>");
+    console.log("scan progress: " + scanResults + "/255"); 
+    if (scanResults < 255){
+        listMartys(ip, false);
+        checkTimeout = setTimeout(checkResults, 1000, ip);
+    } else {
+        clearTimeout(checkTimeout);
+        $('#MartyList').empty();
+        listMartys(ip, true);
+        if (!martylist.length){
+            if (localIP != null && ip != "192.168.0" && ip != "192.168.1"){
+                scanForMartys("192.168.0");
+            } else if (ip == "192.168.0"){
+                scanForMartys("192.168.1");
+            }
+        }
+    }
+}
+
+function listMartys(ip, finishedRange){
+    //clearTimeout(checkTimeout);
+    //$('#MartyList').empty();
+     if (martylist.length){
+        for (var m in martylist){
+            //$('#MartyList').append("Found <b>" + martylist[m][1] + "</b> on the IP: " + martylist[m][0] + ". <a href=\"#\" onlick=\"calibrate('" + martylist[m][0] + "', '" + martylist[m][1] + "');\">Calibrate?</a><br /><a onclick=\"console.log('hello');\">hello</a>");
+            $('#MartyList').append("Found <b>" + martylist[m][1] + "</b> on the IP: " + martylist[m][0] + ". <button class=\"btn smaller success\" onclick=\"calibrateMarty('" + martylist[m][0] + "', '" + escape(martylist[m][1]) + "', -1);\">Calibrate</button><br />");
+        }
+    } else if (finishedRange){
+        $('#MartyList').append("No Martys found :-(<br><button class=\"btn complement\" onclick=\"console.log('scanning...');scanForMartys(null, 60000);\">Re-scan?</button><br><br>Or add by IP: <input type=\"text\" id=\"martyIp\"> <button class=\"btn\" onclick=\"add_marty_by_ip();\">Add</button>");
+    }
+}
+
+
+var mlist = [];
+function addMartyCallback(){
+    if (mlist.length > 0){
+        calibrateMarty(mlist[0][0], mlist[0][1], -1);
+    } else {
+        var ip = document.getElementById("martyIp").value;
+        $('#MartyList').empty();
+        $('#MartyList').append("No Marty found at" + ip + " :-(. <button class=\"btn warning\" onclick=\"console.log('scanning...');scanForMartys();\">Re-scan?</button><br />Or add by IP: <input type=\"text\" id=\"martyIp\"> <button class=\"btn\" onclick=\"add_marty_by_ip();\">Add</button>");
+    }
+}
+
+function add_marty_by_ip(){
+    mlist = [];
+    sendRequest(document.getElementById("martyIp").value, mlist);
+    setTimeout(addMartyCallback, 3000);
+}
+
+var m;
+function calibrateMarty(ip, name, stage){
+    document.getElementById("calibration").style.visibility = 'visible';
+    switch (stage){
+        case -1:
+            document.getElementById("calibrationWarning").innerHTML = "<div class=\"alert danger tag\"><b>Warning!</b><br />Marty might move quickly - please move fingers away!</div>";
+            document.getElementById("calibrationWarning").style.visibility = "visible";
+            setTimeout(function(){calibrateMarty(ip, name, 0);}, 2000);
+            break;
+        case 0:
+            m = new Marty(ip, name);
+            // allow time for connection
+            setTimeout(function(){calibrateMarty(ip, name, 1);}, 1000);
+            break;
+        case 1:
+            if (m.socket.readyState > 1){
+                if (ip=="192.168.4.1"){
+                    alert("Failed to connect. For direct connection, please make sure you are connected to a Marty Setup wifi network");
+                    return;
+                } else {
+                    alert("Failed to connect. Please check the connection and try again");
+                }
+            }
+            var battery = m.get_sensor("battery");
+            if (battery === null){
+                setTimeout(function(){calibrateMarty(ip, name, 1);}, 500);
+            } else if (battery < 7.6){
+                document.getElementById("calibrationWarning").innerHTML = "MARTY'S BATTERY IS LOW! :-( <br /> please plug in the charger and then try calibration again in a few mins";
+            } else {
+                document.getElementById("calibrationWarning").style.visibility = "hidden";
+                // TODO: check for successful connection
+                m.enable_motors();
+                m.hello();
+                m.lifelike_behaviours(false);
+                m.fall_protection(false);
+                setTimeout(function(){calibrateMarty(ip, name, 2);}, 100);
+            }
+            console.log("battery: " + battery);
+            break;
+        case 2:
+            var i = 0;
+            for (i=0; i<9; i++){        
+                var sname = "mp" + i;
+                var enabled = m.get_sensor("enabled" + i);
+                var mp = m.get_sensor(sname);
+                if (enabled == false){
+                    m.enable_motors();
+                    if (mp != null){
+                        m.move_joint(i, mp);
+                    } else {
+                        m.move_joint(i, 0);
+                    }
+                    mp = "disabled!";
+                }
+                document.getElementById(sname).innerHTML = mp;
+            }
+            document.getElementById("chatter").innerHTML = m.get_sensor("chatter");
+            setTimeout(function(){calibrateMarty(ip, name, 2);}, 100);
+            break;
+    }
+
+}
+
+function directConnect(){
+    calibrateMarty("192.168.4.1", "Marty", -1);
+}
+
+
+function adjustJoint(id, amount){
+    var oldPos = m.get_sensor("mp" + id);
+    if (oldPos === null){
+        setTimeout(function(){adjustJoint(id, amount);}, 200);
+        return;
+    }
+    m.move_joint(id, oldPos + amount);
+    return;
+}
+
+function save_calibration(){
+    m.save_calibration();
+    document.getElementById("walkButton").disabled = false;
+    document.getElementById("zeroButton").disabled = false;
+}
+
+function clear_calibration(){
+    m.clear_calibration();
+    document.getElementById("calibrationWarning").innerHTML = "Calibration cleared. Please reset your Marty for this to take effect";
+    document.getElementById("calibrationWarning").style.visibility = "visible";
+    alert("Please turn your robot off and on again for calibration clear to take effect.");
+}
+
+//scanForMartys();
+</script>
+
+<div style="text-align:center;display:none" id="ipWarning">
+    <div class="alert warning tag"><b>Attention!</b><br />The Marty scanner is having trouble finding your IP <br />If it can't find Marty then please try this again in a browser like Chrome or Firefox</div>
+</div>
+
+<p>
+    <div id="MartyList" class="text-center">
+      <button onclick="scanForMartys();" class="btn bitbigger rounded"><i class="fa fa-fw fa-search"></i> &nbsp; Scan for Martys</button>
+      <button onclick="directConnect();" class="btn bitbigger rounded"><i class="fa fa-fw fa-search"></i> &nbsp; Direct Connect</button>
+    </div>
+</p>
+
+<div style="text-align:center;visibility:hidden" id="calibrationWarning">
+    <div class="alert danger tag"><b>Warning!</b><br />Marty might move quickly - please move fingers away!</div>
+</div>
+<p>
+<div id="calibration" style="visibility:hidden">
+    Calibration:
+        <span id="martyname"></span>
+<br />
+<table>
+    <tr>
+        <td>Left hip: </td>
+        <td width="100"><span id="mp0">waiting...</span></td>
+        <td class="smaller">
+            <button onclick="adjustJoint(0,-5)" class="btn smaller">-5</button>
+            <button onclick="adjustJoint(0, -1);" class="btn smaller">-1</button> /
+            <button onclick="adjustJoint(0,1)" class="btn smaller">+1</button>
+            <button onclick="adjustJoint(0,5)" class="btn smaller">+5</button> <br /></td>
+    </tr>
+    <tr>
+        <td>Left twist: </td>
+        <td><span id="mp1">waiting...</span></td>
+        <td class="smaller">
+            <button onclick="adjustJoint(1,-5)" class="btn smaller">-5</button>
+            <button onclick="adjustJoint(1, -1);" class="btn smaller">-1</button> /
+            <button onclick="adjustJoint(1,1)" class="btn smaller">+1</button>
+            <button onclick="adjustJoint(1,5)" class="btn smaller">+5</button> <br /></td>
+        </td>
+    </tr>
+    <tr>
+        <td>Left knee: </td>
+        <td><span id="mp2">waiting...</span> </td>
+        <td class="smaller">
+            <button onclick="adjustJoint(2,-5)" class="btn smaller">-5</button>
+            <button onclick="adjustJoint(2, -1);" class="btn smaller">-1</button> /
+            <button onclick="adjustJoint(2,1)" class="btn smaller">+1</button>
+            <button onclick="adjustJoint(2,5)" class="btn smaller">+5</button> <br /></td>
+        </td>
+    </tr>
+    <tr>
+        <td>Right hip: </td>
+        <td><span id="mp3">waiting...</span></td>
+        <td class="smaller">
+            <button onclick="adjustJoint(3,-5)" class="btn smaller">-5</button>
+            <button onclick="adjustJoint(3, -1);" class="btn smaller">-1</button> /
+            <button onclick="adjustJoint(3,1)" class="btn smaller">+1</button>
+            <button onclick="adjustJoint(3,5)" class="btn smaller">+5</button> <br /></td>
+        </td>
+    </tr>
+    <tr>
+        <td>Right twist: </td>
+        <td><span id="mp4">waiting...</span></td>
+        <td class="smaller">
+            <button onclick="adjustJoint(4,-5)" class="btn smaller">-5</button>
+            <button onclick="adjustJoint(4, -1);" class="btn smaller">-1</button> /
+            <button onclick="adjustJoint(4,1)" class="btn smaller">+1</button>
+            <button onclick="adjustJoint(4,5)" class="btn smaller">+5</button> <br /></td>
+        </td>
+    </tr>
+    <tr>
+        <td>Right knee: </td>
+        <td><span id="mp5">waiting...</span></td>
+        <td class="smaller">
+            <button onclick="adjustJoint(5,-5)" class="btn smaller">-5</button>
+            <button onclick="adjustJoint(5, -1);" class="btn smaller">-1</button> /
+            <button onclick="adjustJoint(5,1)" class="btn smaller">+1</button>
+            <button onclick="adjustJoint(5,5)" class="btn smaller">+5</button> <br /></td>
+        </td>
+    </tr>
+    <tr>
+        <td>Left arm: </td>
+        <td><span id="mp6">waiting...</span></td>
+        <td class="smaller">
+            <button onclick="adjustJoint(6,-5)" class="btn smaller">-5</button>
+            <button onclick="adjustJoint(6, -1);" class="btn smaller">-1</button> /
+            <button onclick="adjustJoint(6,1)" class="btn smaller">+1</button>
+            <button onclick="adjustJoint(6,5)" class="btn smaller">+5</button> <br /></td>
+        </td>
+    </tr>
+    <tr>
+        <td>Right arm:</td>
+        <td><span id="mp7">waiting...</span></td>
+        <td class="smaller">
+            <button onclick="adjustJoint(7,-5)" class="btn smaller">-5</button>
+            <button onclick="adjustJoint(7, -1);" class="btn smaller">-1</button> /
+            <button onclick="adjustJoint(7,1)" class="btn smaller">+1</button>
+            <button onclick="adjustJoint(7,5)" class="btn smaller">+5</button>
+        </td>
+    </tr>
+    <tr>
+        <td><b class="text-danger">DO NOT MOVE EYES BY HAND</b><br>Eyes: </td>
+        <td><span id="mp8">waiting...</span> </td>
+        <td class="smaller">
+            <button onclick="adjustJoint(8,-5)" class="btn smaller">-5</button>
+            <button onclick="adjustJoint(8, -1);" class="btn smaller">-1</button> /
+            <button onclick="adjustJoint(8,1)" class="btn smaller">+1</button>
+            <button onclick="adjustJoint(8,5)" class="btn smaller">+5</button> <br /></td>
+        </td>
+    </tr>
+</table>
+</p>
+<p>
+Chatter: <span id="chatter">waiting...</span>
+</p>
+<p>
+    Marty's eyebrows should be flat when you click "Save Calibration". They will then default to a slightly wider position
+</p>
+
+<button class="btn success" onclick="save_calibration()"><i class="fa fa-fw fa-check"></i> &nbsp; Save Calibration!</button>
+&nbsp; &nbsp;
+<button class="btn danger" onclick="clear_calibration();">Clear Calibration (requires power cycle)</button>
+
+<p>
+  <button class="btn complement" onclick="m.walk(2, 0, 1500, 50);" id="walkButton" disabled>Walk Forward</button>
+  <button class="btn complement" onclick="m.stand_straight(2000);" id="zeroButton">Zero joints (Reset)</button>
+</p>
+</div>
+
+</body>
+</html>

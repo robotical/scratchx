@@ -637,6 +637,7 @@ function selectorExtension(ext){
         if (marty.alive){
             marty.reset_wifi();
             callback(true);
+            alert("Resetting WiFi. Please wait and re-connect to the Marty Setup network");
         } else {
             alert("Not currently connected. Please try again when Marty is connected");
             callback(false);
