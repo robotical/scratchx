@@ -85,6 +85,7 @@ function Marty(IP, name){
     this.alive = false;
     // set the number of requests that can be pending before we class the connection as dead and attempt to reconnect
     this.requests_limit = 300;
+    this.socket.autoReconnect = true;
 
 
     this.socket.onmessage = function (event){
@@ -144,6 +145,7 @@ function Marty(IP, name){
 
   this.autoReconnectInterval = 1000;
   this.reconnect = function(e){
+    if (!this.socket.autoReconnect){return;}
     if (this.sensorInt){
       clearInterval(this.sensorInt);
     }

@@ -19,7 +19,7 @@ function loadScript(url, callback)
     head.appendChild(script);
 }
 
-loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180803");
+loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180801");
 //loadScript("/js/marty.js?v=20180730");
 loadScript("https://robotical.github.io/scratchx/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
 //loadScript("/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
@@ -619,6 +619,9 @@ function selectorExtension(ext){
     }
 
     ext.direct_connect = function(callback){
+        // if we've activated marty before, destroy the current socket to stop it trying to auto-reconnect
+        //if (marty != null){marty.socket = null;}
+        ext.stop_connection();
         direct = true;
         select_marty("192.168.4.1", "Marty", -1);
         ScratchExtensions.unregister(selectorTitle);
@@ -645,6 +648,14 @@ function selectorExtension(ext){
             callback(false);
         }
         
+    }
+
+    ext.stop_connection = function(){
+        if (marty != null){
+            marty.socket.autoReconnect = false;
+            marty.socket.close();
+            //marty = null;
+        }
     }
 
     ext.rescan = function(name){
@@ -674,7 +685,8 @@ function selectorExtension(ext){
         blocks: [
             // Block type, block name, function name
             ['w', 'Direct Connect', 'direct_connect'],
-            ['w', 'Reset WiFi', 'reset_wifi']
+            ['w', 'Reset WiFi', 'reset_wifi'],
+            [' ', 'Stop connection', 'stop_connection']
         ],
         menus: {
             martys : martyNames,
@@ -684,7 +696,8 @@ function selectorExtension(ext){
         blocks: [
             // Block type, block name, function name
             ['w', 'Direct Connect', 'direct_connect'],
-            ['w', 'Connection issues? Reset WiFi', 'reset_wifi']
+            ['w', 'Connection issues? Reset WiFi', 'reset_wifi'],
+            [' ', 'Stop connection', 'stop_connection']
         ],
         menus: {
             martys : martyNames,
