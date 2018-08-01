@@ -26,7 +26,8 @@ Handler = httpserve.SimpleHTTPRequestHandler
 httpd = socketserver.TCPServer(("", PORT), Handler)
 print("Serving on http://localhost:%d" % PORT)
 
-webbrowser.open('http://localhost:%d/?url=http://localhost:%d/scratch_extensions/martyExtended.js#scratch' % (PORT, PORT))
+#webbrowser.open('http://localhost:%d/?url=http://localhost:%d/scratch_extensions/martyExtended.js#scratch' % (PORT, PORT))
+webbrowser.open('http://localhost:%d/martyScratch.html' % (PORT))
 
 try:
     httpd.serve_forever()
