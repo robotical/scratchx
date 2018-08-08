@@ -19,10 +19,12 @@ function loadScript(url, callback)
     head.appendChild(script);
 }
 
-loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180801");
+loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180808");
 //loadScript("/js/marty.js?v=20180730");
-loadScript("https://robotical.github.io/scratchx/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
-//loadScript("/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
+////loadScript("https://robotical.github.io/scratchx/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
+////loadScript("/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
+loadScript("https://robotical.github.io/scratchx/js/martyScan.js");
+//loadScript("/js/martyScan.js");
 
 
 // ----------------------------
@@ -580,8 +582,10 @@ function selectorExtension(ext){
         } else {
             if (marty.alive){
                 return {status: 2,  msg: 'Connected to ' + marty.ip};
-            } else {
+            } else if (marty.socket.autoReconnect){
                 return {status: 1, msg: 'Connection lost. Trying to reconnect to ' + marty.ip};
+            } else {
+                return {status: 1, msg: 'Not connected'};
             }
         }
     };
@@ -656,6 +660,9 @@ function selectorExtension(ext){
             marty.socket.close();
             //marty = null;
         }
+        direct = false;
+        ScratchExtensions.unregister(selectorTitle);
+        selectorExtension(ext2);
     }
 
     ext.rescan = function(name){
@@ -672,9 +679,9 @@ function selectorExtension(ext){
     var descriptor = {
         blocks: [
             // Block type, block name, function name
-            ['w', 'Select Marty %m.martys', 'add_marty_by_name', martyNames[0]],
-            ['w', 'Select Marty on IP: %s', 'addMartyByIP', '192.168.0.10'],
-            [' ', 'Rescan', 'rescan'],
+            //['w', 'Select Marty %m.martys', 'add_marty_by_name', martyNames[0]],
+            //['w', 'Select Marty on IP: %s', 'addMartyByIP', '192.168.0.10'],
+            //[' ', 'Rescan', 'rescan'],
             [' ', 'Direct Connect', 'direct_connect']
         ],
         menus: {
@@ -684,9 +691,20 @@ function selectorExtension(ext){
     var descriptor_direct = {
         blocks: [
             // Block type, block name, function name
-            ['w', 'Direct Connect', 'direct_connect'],
-            ['w', 'Reset WiFi', 'reset_wifi'],
+            //['w', 'Direct Connect', 'direct_connect'],
+            ['w', 'Repair WiFi', 'reset_wifi'],
             [' ', 'Stop connection', 'stop_connection']
+        ],
+        menus: {
+            martys : martyNames,
+        }
+    };
+    var descriptor_direct_not_connecting = {
+        blocks: [
+            // Block type, block name, function name
+            ['w', 'Direct Connect', 'direct_connect'],
+            ['w', 'Repair WiFi', 'reset_wifi']
+            //[' ', 'Stop connection', 'stop_connection']
         ],
         menus: {
             martys : martyNames,
@@ -696,7 +714,7 @@ function selectorExtension(ext){
         blocks: [
             // Block type, block name, function name
             ['w', 'Direct Connect', 'direct_connect'],
-            ['w', 'Connection issues? Reset WiFi', 'reset_wifi'],
+            ['w', 'Connection issues? Repair WiFi', 'reset_wifi'],
             [' ', 'Stop connection', 'stop_connection']
         ],
         menus: {
@@ -708,10 +726,11 @@ function selectorExtension(ext){
     // Register the extension
     if (!direct){
         ScratchExtensions.register(selectorTitle, descriptor, ext);
-    } else if (direct_connect_fail){
-        ScratchExtensions.register(selectorTitle, descriptor_direct_reset, ext);
+    } else if(marty.socket === null) {
+        ScratchExtensions.register(selectorTitle, descriptor_direct_not_connecting, ext);
+    //} else if (direct_connect_fail){
+    //    ScratchExtensions.register(selectorTitle, descriptor_direct_reset, ext);
     } else {
-        ScratchExtensions.register(selectorTitle, descriptor_direct, ext);
-    
+        ScratchExtensions.register(selectorTitle, descriptor_direct, ext);    
     }
 }
