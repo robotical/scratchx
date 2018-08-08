@@ -635,21 +635,32 @@ function selectorExtension(ext){
                 //alert("connected");
                 callback(true);
             } else {
-                alert("did not connect. Please check you are connected to a Marty Setup wifi network");
+                document.getElementById('msgOverlayMsg').innerHTML = "Did not connect. Please check you are connected to a Marty Setup wifi network<br ><br ><button onclick=\"document.getElementById('msgOverlay').style.display='none'\">Ok</button>";
+                document.getElementById('msgOverlay').style.display = "table";
+                setTimeout(function(){document.getElementById('msgOverlay').style.display = "none";}, 10000);
+                //alert("did not connect. Please check you are connected to a Marty Setup wifi network");
                 callback(false);
             }
             
         }, 1500);
     }
 
+    ext.reset_wifi_timeout = null;
     ext.reset_wifi = function(callback){
         if (marty.alive){
             marty.reset_wifi();
-            callback(true);
-            alert("Resetting WiFi. Please wait and re-connect to the Marty Setup network");
+            callback();
+            document.getElementById('msgOverlayMsg').innerHTML = "Resetting WiFi. Please wait and re-connect to the Marty Setup network";
+            document.getElementById('msgOverlay').style.display = "table";
+            setTimeout(function(){document.getElementById('msgOverlay').style.display = "none";}, 10000);
+            //alert("Resetting WiFi. Please wait and re-connect to the Marty Setup network");
         } else {
-            alert("Not currently connected. Please try again when Marty is connected");
-            callback(false);
+            document.getElementById('msgOverlayMsg').innerHTML = "Not currently connected. Trying to reconnect...<br > Please make sure you are connected to the Marty Setup network<br ><br ><button onclick=\"clearTimeout(reset_wifi_timeout);document.getElementById('msgOverlay').style.display='none'\">Cancel</button>";
+            document.getElementById('msgOverlay').style.display = "table";
+            reset_wifi_timeout = setTimeout(ext.reset_wifi, 1000, callback);
+            //setTimeout(function(){document.getElementById('msgOverlay').style.display = "none";}, 5000);
+            //alert("Not currently connected. Please try again when Marty is connected");
+            callback();
         }
         
     }
@@ -734,3 +745,19 @@ function selectorExtension(ext){
         ScratchExtensions.register(selectorTitle, descriptor_direct, ext);    
     }
 }
+
+function createOverlays(){
+    var msgOverlay = document.createElement('div');
+    msgOverlay.id = "msgOverlay";
+    msgOverlay.style.position = "absolute";
+    msgOverlay.style.width = "100%";
+    msgOverlay.style.height = "100%";
+    msgOverlay.style.zIndex = 1000;
+    msgOverlay.style.backgroundColor = "rgba(1,1,1,0.5)";
+    msgOverlay.style.display = "none";
+    msgOverlay.style.textAlign = "center";
+    msgOverlay.innerHTML = "<span style='display:table-cell;vertical-align:middle;text-align:center'><div id='msgOverlayMsg' style='width:60%;background-color:#f9e3e5;color:#c82e3b;border: 1pt solid #eaa5ab;text-align:center;display:inline-block;vertical-align:middle;padding:0.5rem;border-radius:1rem'>test</div></span>";
+    document.body.appendChild(msgOverlay);
+}
+
+createOverlays();
