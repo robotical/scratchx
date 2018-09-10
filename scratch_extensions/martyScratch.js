@@ -131,7 +131,7 @@ function checkResults(ip){
         // if this is the first Marty found, we select it
         if (marty === null){
             console.log("First Marty, selecting " + martylist[0][1] + " on " + martylist[0][1]);
-            marty = new Marty(martylist[0][0], martylist[0][1]);
+            select_marty(martylist[0][0], martylist[0][1]);
         }
     }
     if (scanResults < 254){
@@ -182,11 +182,33 @@ function setMarty(){
 
 selectorExtension(ext2);
 
+var _mtr_disab_overkill = null;
+var _mtr_disab_lasthit = 0;
+function _handle_mtr_disab(event){
+    if (event["time"].getTime() - _mtr_disab_lasthit > 1000){
+        console.log(event);
+        if (_mtr_disab_overkill) clearInterval(_mtr_disab_overkill);
+
+        var over = document.getElementById('disabOverlay');
+        over.style.display = "block";
+        var overmsg = document.getElementById('msgOverlayMsg');
+        
+        overmsg.innerHTML = "<strong>WARNING</strong><br>One of Marty's motors is disabled! Run <em>Get Ready</em> to move again";
+        _mtr_disab_overkill = setTimeout(function(){document.getElementById('disabOverlay').style.display = "none";}, 5000);
+    }
+    _mtr_disab_lasthit = event["time"].getTime();
+}
+
+
 function select_marty(ip, name){
     if (marty != null){
         marty.socket.close();
     }
     marty = new Marty(ip, name);
+    // Start polling motors at 1Hz
+    marty.motorWatchdog(1000);
+    // Add callback to handle a disable event
+    marty.addMotorDisabledCallback(_handle_mtr_disab);
 }
 
 
@@ -601,3 +623,22 @@ function selectorExtension(ext){
     // Register the extension
     ScratchExtensions.register(selectorTitle, descriptor, ext);
 }
+
+function createDisableOverlay(id="disabOverlay"){
+    var msgOverlay = document.createElement('div');
+    msgOverlay.id = id;
+    msgOverlay.style.position = "absolute";
+    msgOverlay.style.width = "300px";
+    //msgOverlay.style.height = "100%";
+    msgOverlay.style.zIndex = 1000;
+    //msgOverlay.style.backgroundColor = "rgba(1,1,1,0.5)";
+    msgOverlay.style.display = "none";
+    msgOverlay.style.textAlign = "left";
+    msgOverlay.style.bottom = "15px";
+    msgOverlay.style.left = "15px";
+    msgOverlay.innerHTML = "<div id='msgOverlayMsg' style='width:100%;background-color:#f9e3e5;color:#c82e3b;border: 1pt solid #eaa5ab;text-align:left;display:inline-block;vertical-align:middle;padding:0.5rem;border-radius:0.5em'>&hellip;</div>";
+    document.body.appendChild(msgOverlay);
+}
+
+createDisableOverlay();
+

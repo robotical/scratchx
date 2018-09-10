@@ -746,9 +746,9 @@ function selectorExtension(ext){
     }
 }
 
-function createOverlays(){
+function createOverlays(id="msgOverlay"){
     var msgOverlay = document.createElement('div');
-    msgOverlay.id = "msgOverlay";
+    msgOverlay.id = id;
     msgOverlay.style.position = "absolute";
     msgOverlay.style.width = "100%";
     msgOverlay.style.height = "100%";
@@ -756,7 +756,7 @@ function createOverlays(){
     msgOverlay.style.backgroundColor = "rgba(1,1,1,0.5)";
     msgOverlay.style.display = "none";
     msgOverlay.style.textAlign = "center";
-    msgOverlay.innerHTML = "<span style='display:table-cell;vertical-align:middle;text-align:center'><div id='msgOverlayMsg' style='width:60%;background-color:#f9e3e5;color:#c82e3b;border: 1pt solid #eaa5ab;text-align:center;display:inline-block;vertical-align:middle;padding:0.5rem;border-radius:1rem'>test</div></span>";
+    msgOverlay.innerHTML = "<span style='display:table-cell;vertical-align:middle;text-align:center'><div id='msgOverlayMsg' style='width:60%;background-color:#f9e3e5;color:#c82e3b;border: 1pt solid #eaa5ab;text-align:center;display:inline-block;vertical-align:middle;padding:0.5rem;border-radius:0.5rem'>test</div></span>";
     document.body.appendChild(msgOverlay);
 }
 
