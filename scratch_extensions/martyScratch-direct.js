@@ -198,11 +198,12 @@ function _handle_mtr_disab(event){
 
     var over = document.getElementById('disabOverlay');
     over.style.display = "block";
-    var overmsg = document.getElementById('msgOverlayMsg');
+    var overmsg = document.getElementById('disabOverlayMsg');
     var wordlut = {
         1 : "One of",
         2 : "A couple of",
-        3 : "Three of"
+        3 : "Three of",
+        9 : "All of"
     };
     var word = wordlut[num_disables] ? wordlut[num_disables] : "";
     var is_or_are = num_disables > 1 ? "are" : "is";
@@ -210,7 +211,7 @@ function _handle_mtr_disab(event){
     for (i = 0; i < num_disables; i++){
         busted.push(marty.jointNames[event['disables'][i]]);
     }
-    overmsg.innerHTML = "<strong style='font-size: 1.4em;'>Uh-Oh!</strong><br>" + word + " Marty's motors " + is_or_are + " disabled!<br>Run <strong>Get Ready</strong> or <strong>Enable Motors</strong> to move again.<br><span style='font-size: 0.75em; opacity: 0.6;'>" + busted.join(', ') + "</span>";
+    overmsg.innerHTML = "<strong>Heads-up!</strong>&nbsp;" + word + " Marty's motors " + is_or_are + " disabled.<br><span style='font-size: 0.9em;'>Run <strong>Get Ready</strong> or <strong>Enable Motors</strong> to move again.</span><br><span style='font-size: 0.6em; opacity: 0.75;'>" + busted.join(', ') + "</span>";
     
     if (_mtr_disab_overkill) clearInterval(_mtr_disab_overkill);
     _mtr_disab_overkill = setTimeout(function(){document.getElementById('disabOverlay').style.display = "none";}, 3000);
@@ -807,17 +808,16 @@ function createDisableOverlay(id="disabOverlay"){
     var msgOverlay = document.createElement('div');
     msgOverlay.id = id;
     msgOverlay.style.position = "absolute";
-    msgOverlay.style.width = "300px";
+    msgOverlay.style.width = "400px";
     //msgOverlay.style.height = "100%";
-    msgOverlay.style.zIndex = 1001;
+    msgOverlay.style.zIndex = 1000;
     //msgOverlay.style.backgroundColor = "rgba(1,1,1,0.5)";
     msgOverlay.style.display = "none";
     msgOverlay.style.textAlign = "left";
     msgOverlay.style.bottom = "15px";
     msgOverlay.style.left = "15px";
-    msgOverlay.innerHTML = "<div id='msgOverlayMsg' style='width:100%;background-color:#f9e3e5;color:#c82e3b;border: 1pt solid #eaa5ab;text-align:left;display:inline-block;vertical-align:middle;padding:0.5rem;border-radius:0.5em;box-shadow: 0rem 0.2rem 0.6rem 0rem rgba(0,0,0,0.3)'>&hellip;</div>";
+    msgOverlay.innerHTML = "<div id='disabOverlayMsg' style='width:100%;background-color:#ffda61;color:#614a00;border: 1pt solid #ffce2e;text-align:left;display:inline-block;vertical-align:middle;padding:0.5rem;border-radius:0.5em;box-shadow: 0rem 0.2rem 0.6rem 0rem rgba(0,0,0,0.3)'>&hellip;</div><a id='disabOverlayHide' onclick=\"document.getElementById('disabOverlayMsg').style.display = 'none';document.getElementById('disabOverlayShow').style.display='block';document.getElementById('disabOverlayHide').style.display = 'none';\" style='color: #614a00; font-size: 0.75em;'>&nbsp; &nbsp;HIDE WARNING</a><a id='disabOverlayShow' onclick=\"document.getElementById('disabOverlayMsg').style.display = 'block';document.getElementById('disabOverlayShow').style.display='none';document.getElementById('disabOverlayHide').style.display='inline-block';\" style='display: none;color: #614a00; font-size: 0.75em;'>&nbsp; &nbsp;SHOW WARNING</a>";
     document.body.appendChild(msgOverlay);
 }
 
 createDisableOverlay();
-
