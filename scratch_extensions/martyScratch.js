@@ -19,8 +19,8 @@ function loadScript(url, callback)
     head.appendChild(script);
 }
 
-loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180403");
-//loadScript("/js/marty.js?v=20180330");
+loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180910");
+//loadScript("/js/marty.js?v=20180910");
 loadScript("https://robotical.github.io/scratchx/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
 //loadScript("/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
 
@@ -204,7 +204,7 @@ function _handle_mtr_disab(event){
     for (i = 0; i < num_disables; i++){
         busted.push(marty.jointNames[event['disables'][i]]);
     }
-    overmsg.innerHTML = "<strong style='font-size: 1.4em;'>Uh-Oh!</strong><br>" + word + " Marty's motors " + is_or_are + " disabled!<br>Run <strong>Get Ready</strong> to move again.<br><span style='font-size: 0.75em; opacity: 0.6;'>" + busted.join(', ') + "</span>";
+    overmsg.innerHTML = "<strong style='font-size: 1.4em;'>Uh-Oh!</strong><br>" + word + " Marty's motors " + is_or_are + " disabled!<br>Run <strong>Get Ready</strong> or <strong>Enable Motors</strong> to move again.<br><span style='font-size: 0.75em; opacity: 0.6;'>" + busted.join(', ') + "</span>";
     
     if (_mtr_disab_overkill) clearInterval(_mtr_disab_overkill);
     _mtr_disab_overkill = setTimeout(function(){document.getElementById('disabOverlay').style.display = "none";}, 3000);

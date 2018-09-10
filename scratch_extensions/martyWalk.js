@@ -16,7 +16,7 @@ function loadScript(url, callback)
 }
 
 var ext = {};
-loadScript("https://robotical.github.io/scratchx/scratch_extensions/martyScratch.js?v=2018-02-08", registerExtension);
+loadScript("https://robotical.github.io/scratchx/scratch_extensions/martyScratch.js?v=20180910", registerExtension);
 
 function registerExtension(){
     // Block and block menu descriptions

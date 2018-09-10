@@ -19,7 +19,7 @@ function loadScript(url, callback)
     head.appendChild(script);
 }
 
-loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180808");
+loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180910");
 //loadScript("/js/marty.js?v=20180730");
 ////loadScript("https://robotical.github.io/scratchx/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
 ////loadScript("/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
@@ -136,7 +136,7 @@ function checkResults(ip){
         // if this is the first Marty found, we select it
         if (marty === null){
             console.log("First Marty, selecting " + martylist[0][1] + " on " + martylist[0][1]);
-            marty = new Marty(martylist[0][0], martylist[0][1]);
+            select_marty(martylist[0][0], martylist[0][1]);
         }
     }
     if (scanResults < 254){
@@ -170,7 +170,7 @@ function checkMartys(ip){
 /*
 function setMarty(){
     if (martylist.length === 1){
-        marty = new Marty(martylist[0][0], martylist[0][1]);
+        marty = new Marty(martylist[0][0], martylist[0][1]); // Don't do this, use select_marty
     } else {
         if (martylist.length > 0){
             for (m in martylist){
@@ -187,15 +187,54 @@ function setMarty(){
 
 selectorExtension(ext2);
 
+
+var _mtr_disab_overkill = null;
+var _mtr_disab_lasthit = 0;
+
+function _handle_mtr_disab(event){
+    //console.log(event);
+
+    var num_disables = event['disables'].length;
+
+    var over = document.getElementById('disabOverlay');
+    over.style.display = "block";
+    var overmsg = document.getElementById('msgOverlayMsg');
+    var wordlut = {
+        1 : "One of",
+        2 : "A couple of",
+        3 : "Three of"
+    };
+    var word = wordlut[num_disables] ? wordlut[num_disables] : "";
+    var is_or_are = num_disables > 1 ? "are" : "is";
+    var busted = [];
+    for (i = 0; i < num_disables; i++){
+        busted.push(marty.jointNames[event['disables'][i]]);
+    }
+    overmsg.innerHTML = "<strong style='font-size: 1.4em;'>Uh-Oh!</strong><br>" + word + " Marty's motors " + is_or_are + " disabled!<br>Run <strong>Get Ready</strong> or <strong>Enable Motors</strong> to move again.<br><span style='font-size: 0.75em; opacity: 0.6;'>" + busted.join(', ') + "</span>";
+    
+    if (_mtr_disab_overkill) clearInterval(_mtr_disab_overkill);
+    _mtr_disab_overkill = setTimeout(function(){document.getElementById('disabOverlay').style.display = "none";}, 3000);
+    _mtr_disab_lasthit = event["time"].getTime();
+}
+
+
 function select_marty(ip, name){
     if (marty != null){
         marty.socket.close();
     }
     marty = new Marty(ip, name);
+
     // we might get a lot of data through, so increase the requests limit to prevent unnecessary timeouts
     marty.requests_limit = 500;
     intStateMonitor = setInterval(stateMonitor, 100);
+
+    
+    // Start polling motors at 1Hz
+    marty.motorWatchdog(1000);
+    // Add callback to handle a disable event
+    marty.addMotorDisabledCallback(_handle_mtr_disab);
 }
+
 
 function stateMonitor(){
     if (marty == null){return;}
@@ -746,6 +785,7 @@ function selectorExtension(ext){
     }
 }
 
+
 function createOverlays(id="msgOverlay"){
     var msgOverlay = document.createElement('div');
     msgOverlay.id = id;
@@ -761,3 +801,23 @@ function createOverlays(id="msgOverlay"){
 }
 
 createOverlays();
+
+
+function createDisableOverlay(id="disabOverlay"){
+    var msgOverlay = document.createElement('div');
+    msgOverlay.id = id;
+    msgOverlay.style.position = "absolute";
+    msgOverlay.style.width = "300px";
+    //msgOverlay.style.height = "100%";
+    msgOverlay.style.zIndex = 1001;
+    //msgOverlay.style.backgroundColor = "rgba(1,1,1,0.5)";
+    msgOverlay.style.display = "none";
+    msgOverlay.style.textAlign = "left";
+    msgOverlay.style.bottom = "15px";
+    msgOverlay.style.left = "15px";
+    msgOverlay.innerHTML = "<div id='msgOverlayMsg' style='width:100%;background-color:#f9e3e5;color:#c82e3b;border: 1pt solid #eaa5ab;text-align:left;display:inline-block;vertical-align:middle;padding:0.5rem;border-radius:0.5em;box-shadow: 0rem 0.2rem 0.6rem 0rem rgba(0,0,0,0.3)'>&hellip;</div>";
+    document.body.appendChild(msgOverlay);
+}
+
+createDisableOverlay();
+
