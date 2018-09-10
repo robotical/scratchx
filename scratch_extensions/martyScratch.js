@@ -184,18 +184,30 @@ selectorExtension(ext2);
 
 var _mtr_disab_overkill = null;
 var _mtr_disab_lasthit = 0;
-function _handle_mtr_disab(event){
-    if (event["time"].getTime() - _mtr_disab_lasthit > 1000){
-        console.log(event);
-        if (_mtr_disab_overkill) clearInterval(_mtr_disab_overkill);
 
-        var over = document.getElementById('disabOverlay');
-        over.style.display = "block";
-        var overmsg = document.getElementById('msgOverlayMsg');
-        
-        overmsg.innerHTML = "<strong>WARNING</strong><br>One of Marty's motors is disabled! Run <em>Get Ready</em> to move again";
-        _mtr_disab_overkill = setTimeout(function(){document.getElementById('disabOverlay').style.display = "none";}, 5000);
+function _handle_mtr_disab(event){
+    //console.log(event);
+
+    var num_disables = event['disables'].length;
+
+    var over = document.getElementById('disabOverlay');
+    over.style.display = "block";
+    var overmsg = document.getElementById('msgOverlayMsg');
+    var wordlut = {
+        1 : "One of",
+        2 : "A couple of",
+        3 : "Three of"
+    };
+    var word = wordlut[num_disables] ? wordlut[num_disables] : "";
+    var is_or_are = num_disables > 1 ? "are" : "is";
+    var busted = [];
+    for (i = 0; i < num_disables; i++){
+        busted.push(marty.jointNames[event['disables'][i]]);
     }
+    overmsg.innerHTML = "<strong style='font-size: 1.4em;'>Uh-Oh!</strong><br>" + word + " Marty's motors " + is_or_are + " disabled!<br>Run <strong>Get Ready</strong> to move again.<br><span style='font-size: 0.75em; opacity: 0.6;'>" + busted.join(', ') + "</span>";
+    
+    if (_mtr_disab_overkill) clearInterval(_mtr_disab_overkill);
+    _mtr_disab_overkill = setTimeout(function(){document.getElementById('disabOverlay').style.display = "none";}, 3000);
     _mtr_disab_lasthit = event["time"].getTime();
 }
 
@@ -636,7 +648,7 @@ function createDisableOverlay(id="disabOverlay"){
     msgOverlay.style.textAlign = "left";
     msgOverlay.style.bottom = "15px";
     msgOverlay.style.left = "15px";
-    msgOverlay.innerHTML = "<div id='msgOverlayMsg' style='width:100%;background-color:#f9e3e5;color:#c82e3b;border: 1pt solid #eaa5ab;text-align:left;display:inline-block;vertical-align:middle;padding:0.5rem;border-radius:0.5em'>&hellip;</div>";
+    msgOverlay.innerHTML = "<div id='msgOverlayMsg' style='width:100%;background-color:#f9e3e5;color:#c82e3b;border: 1pt solid #eaa5ab;text-align:left;display:inline-block;vertical-align:middle;padding:0.5rem;border-radius:0.5em;box-shadow: 0rem 0.2rem 0.6rem 0rem rgba(0,0,0,0.3)'>&hellip;</div>";
     document.body.appendChild(msgOverlay);
 }
 
