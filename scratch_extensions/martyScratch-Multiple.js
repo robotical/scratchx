@@ -409,7 +409,7 @@ function select_marty(ip, name){
             joint = 'right knee';
         }
         for (m in martys){
-            martys[m].move_joint(jointID[joint], 80*mult, 750);
+            martys[m].move_joint(jointID[joint], 70*mult, 750);
         }
         setTimeout(callback, 750);
     }

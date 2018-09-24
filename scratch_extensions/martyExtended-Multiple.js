@@ -17,7 +17,7 @@ function loadScript(url, callback)
 
 var ext = {};
 //loadScript("/scratch_extensions/martyScratch-Multiple.js?v=20180403", registerExtension);
-loadScript("https://robotical.github.io/scratchx/scratch_extensions/martyScratch-Multiple.js?v=20180403", registerExtension);
+loadScript("https://robotical.github.io/scratchx/scratch_extensions/martyScratch-Multiple.js?v=20180924", registerExtension);
 
 
 
