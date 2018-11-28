@@ -19,10 +19,10 @@ function loadScript(url, callback)
     head.appendChild(script);
 }
 
-loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180403");
-//loadScript("/js/marty.js?v=20180330");
-loadScript("https://robotical.github.io/scratchx/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
-//loadScript("/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
+//loadScript("https://robotical.github.io/scratchx/js/marty.js?v=20180403");
+loadScript("/scratchx/js/marty.js?v=20180330");
+//loadScript("https://robotical.github.io/scratchx/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
+loadScript("/scratchx/js/martyScan.js", function(){setTimeout(scanForMartys,1000);});
 
 
 // ----------------------------
