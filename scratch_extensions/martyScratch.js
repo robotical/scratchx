@@ -99,7 +99,18 @@ var checkTimeout;
 var scanResults = 0;
 var ext2 = {};
 
+var resp = null;
+
 function scanForMartys(ip){
+    fetch("/cgi-bin/list-martys")
+        .then(response => {
+            if (response.ok){res = response; return response.json()} else {resp = response;console.warn("er #1 Could not load list of Martys from command hub. Switching to old school IP Scan", response.ok);ipScan()}}) //response.json())
+        .then(jsonResponse => parseCHMartyList(jsonResponse.martys))
+        .catch(function(err){console.warn("er #2 Could not load list of Martys from command hub. Switching to old school IP Scan", err);ipScan()});
+}
+
+
+function ipScan(ip){
     if (ip === undefined){ 
         if (localIP != null){
             var ip_parts = localIP.split(".");
@@ -114,6 +125,49 @@ function scanForMartys(ip){
     scanRange(ip, martylist, 15000);
     checkTimeout = setTimeout(checkResults, 1000, ip);
     setTimeout(checkMartys, 16000, ip);
+    
+}
+
+function parseCHMartyList(martys){
+    resp = martys;
+    for (m in martys){
+        console.log(martys[m].ip);
+        sendRequest(martys[m].ip, martylist, 2500);
+    }
+    setTimeout(checkCHResults, 2500);
+}
+
+function checkCHResults(){
+    
+    if (martylist.length != resp.length){
+        // we didn't resolve all the Marty names. Add the others just by IP
+        for (m in resp){
+            var found = false;
+            for (ml in martylist){
+                if (martylist[ml][0] == resp[m].ip){found = true;}
+            }
+            if (!found){martylist.push([resp[m].ip, resp[m].ip])}
+        }
+
+    }
+
+    if (martyNames.length != martylist.length){
+        // new Martys found. redo names list and reload selector extension
+        martyNames = [];
+        for (m in martylist){
+            martyNames.push(martylist[m][1]);
+        }
+        ScratchExtensions.unregister(selectorTitle);
+        selectorExtension(ext2);
+
+        console.log("martylist size: " + martylist.length);
+        // if this is the first Marty found, we select it
+        if (marty === null){
+            console.log("First Marty, selecting " + martylist[0][1] + " on " + martylist[0][1]);
+            select_marty(martylist[0][0], martylist[0][1]);
+        }
+    }
+    scanComplete = true;
 }
 
 function checkResults(ip){
@@ -147,11 +201,11 @@ function checkMartys(ip){
         scanComplete = true;
         //setMarty();
     } else if (localIP != null && ip != "192.168.0" && ip != "192.168.1" && ip != "172.24.1"){
-        scanForMartys("192.168.0");
+        ipScan("192.168.0");
     } else if (ip == "192.168.0"){
     //    scanForMartys("172.24.1");
     //} else if (ip == "172.24.1"){
-        scanForMartys("192.168.1");
+        ipScan("192.168.1");
     } else {
         scanComplete = true;
         martyNames.push('No Martys Found :-(');

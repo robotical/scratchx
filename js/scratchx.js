@@ -55,19 +55,18 @@ var flashVars = {
     urlOverrides: {
         //sitePrefix: "http://localhost:8000",
         //sitePrefix: "http://scratch.mit.edu/",
-        sitePrefix: "/",
+        sitePrefix: "http://scratch.mit.edu/",
 //        siteCdnPrefix: "http://cdn.scratch.mit.edu/",
         siteCdnPrefix: "/",
         //assetPrefix: "http://assets.scratch.mit.edu/",
         assetPrefix: "scratchr2/static/media/",
         //assetCdnPrefix: "http://cdn.assets.scratch.mit.edu/",
         assetCdnPrefix: "scratchr2/static/media/",
-        //siteCdnPrefix: "http://cdn.scratch.mit.edu/",
         projectPrefix: "http://projects.scratch.mit.edu/",
         projectCdnPrefix: "http://cdn.projects.scratch.mit.edu/",
         internalAPI: "internalapi/",
         siteAPI: "site-api/",
-        staticFiles: "scratchr2/static/"
+        staticFiles: "scratchx/scratchr2/static/"
     },
     inIE: (navigator.userAgent.indexOf('MSIE') > -1)
 };
@@ -443,10 +442,12 @@ $(window).on('hashchange', function(e) {
     if (path.charAt(0) != '!') showPage(path);
 });
 
+/*
 $(document).on("page:show", function(e, page){
     ga("send", "pageview", '#' + page);
     ga("set", "referrer", document.location.origin + document.location.pathname + document.location.hash)
 });
+
 
 $(document).on("editor:extensionLoaded", function(e, data){
     if (data.method == "url") {
@@ -457,6 +458,7 @@ $(document).on("editor:extensionLoaded", function(e, data){
         ga("send", "event", "extensionLoaded", data.method);
     }
 });
+*/
 
 function initPage() {
     /*
