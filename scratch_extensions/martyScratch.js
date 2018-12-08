@@ -104,7 +104,10 @@ var resp = null;
 function scanForMartys(ip){
     fetch("/cgi-bin/list-martys")
         .then(response => {
-            if (response.ok){res = response; return response.json()} else {resp = response;console.warn("er #1 Could not load list of Martys from command hub. Switching to old school IP Scan", response.ok);ipScan()}}) //response.json())
+            if (response.ok){res = response; return response.json()} else {resp = response;console.warn("er #1 Could not load list of Martys from command hub. Switching to old school IP Scan", response.ok);
+            // don't need to ipScan here, it'll be actioned by the catch below
+            //ipScan()
+        }}) 
         .then(jsonResponse => parseCHMartyList(jsonResponse.martys))
         .catch(function(err){console.warn("er #2 Could not load list of Martys from command hub. Switching to old school IP Scan", err);ipScan()});
 }
