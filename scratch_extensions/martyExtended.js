@@ -16,10 +16,9 @@ function loadScript(url, callback)
 }
 
 var ext = {};
-loadScript("/scratchx/scratch_extensions/martyScratch.js?v=20180127", registerExtension);
+
+loadScript("/scratchx/scratch_extensions/martyScratch.js?v=20190121", registerExtension);
 //loadScript("https://robotical.github.io/scratchx/scratch_extensions/martyScratch.js?v=20180403", registerExtension);
-
-
 
 function registerExtension(){
     // Block and block menu descriptions

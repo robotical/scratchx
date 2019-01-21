@@ -543,10 +543,18 @@ function select_marty(ip, name){
     }
 
     ext.get_prox_sensor = function(callback){
-        var response = marty.get_sensor("prox");
-        if (response === null){
+        var reading = marty.get_sensor("prox");
+        var response;
+        if (reading === null){
             setTimeout(ext.get_prox_sensor, 100, callback);
         } else {
+            if (reading > 0.025){
+                response = Math.round(Math.pow((reading/10.3221),-0.7616));
+            } else if (reading > 0.005){
+                response = Math.round(Math.pow((reading/33.58069),-0.63808));
+            } else {
+                response =  Math.round(Math.pow((reading/39.8079),-0.61874));
+            }
             callback(response);
         }
     }
