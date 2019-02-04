@@ -43,7 +43,7 @@ function registerExtension(){
             ['w', 'Move %m.leg leg %m.saggital', 'move_leg', 'left', 'forward'],
             ['w', 'Lower leg', 'lower_leg'],
             ['w', 'Enable Motors', 'enable_motors'],
-            ['w', 'Move %m.joints to %n \% in %n secs', 'moveJoint', 'right hip', 0, 0],
+            ['w', 'Move %m.joints to %n degrees in %n secs', 'moveJoint', 'right hip', 0, 0],
             ['w', 'Play sound: start at %n Hz, finish at %n Hz, over %n seconds', 'play_sound', 261, 523, 1.0],
             ['R', 'Input %m.gpios', 'getGPIO', '0'],
             ['R', '%m.motorCurrents motor current', 'get_motor_current', 'left hip'],
