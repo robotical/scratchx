@@ -1,0 +1,22 @@
+{
+	"objName": "Marty1",
+	"costumes": [{
+			"costumeName": "marty1",
+			"baseLayerID": -1,
+			"baseLayerMD5": "b35dec54ff649441f4ddc9f0165b52af.png",
+			"bitmapResolution": 1,
+			"rotationCenterX": 100,
+			"rotationCenterY": 133
+		}],
+	"currentCostumeIndex": 0,
+	"scratchX": 0,
+	"scratchY": 0,
+	"scale": 1,
+	"direction": 90,
+	"rotationStyle": "normal",
+	"isDraggable": false,
+	"indexInLibrary": 100000,
+	"visible": true,
+	"spriteInfo": {
+	}
+}
