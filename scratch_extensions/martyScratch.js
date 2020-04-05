@@ -142,6 +142,7 @@ function parseCHMartyList(martys){
 
 function checkCHResults(){
     
+    /* 
     if (martylist.length != resp.length){
         // we didn't resolve all the Marty names. Add the others just by IP
         for (m in resp){
@@ -153,23 +154,24 @@ function checkCHResults(){
         }
 
     }
+    */
 
-    if (martyNames.length != martylist.length){
-        // new Martys found. redo names list and reload selector extension
-        martyNames = [];
-        for (m in martylist){
-            martyNames.push(martylist[m][1]);
-        }
-        ScratchExtensions.unregister(selectorTitle);
-        selectorExtension(ext2);
-
-        console.log("martylist size: " + martylist.length);
-        // if this is the first Marty found, we select it
-        if (marty === null){
-            console.log("First Marty, selecting " + martylist[0][1] + " on " + martylist[0][1]);
-            select_marty(martylist[0][0], martylist[0][1]);
-        }
+    
+    // Redo names list and reload selector extension
+    martyNames = [];
+    for (m in martylist){
+        martyNames.push(martylist[m][1]);
     }
+    ScratchExtensions.unregister(selectorTitle);
+    selectorExtension(ext2);
+
+    console.log("martylist size: " + martylist.length);
+    // if this is the first and only Marty found, we select it automatically
+    if (marty === null && martylist.length == 1){
+        console.log("First Marty, selecting " + martylist[0][1] + " on " + martylist[0][1]);
+        select_marty(martylist[0][0], martylist[0][1]);
+    }
+    
     scanComplete = true;
 }
 
@@ -272,6 +274,11 @@ function _handle_mtr_disab(event){
 
 function select_marty(ip, name){
     if (marty != null){
+        if (marty.ip == ip){
+            console.log("Already connected to this Marty, do nothing");
+            return;
+        }
+        marty.socket.autoReconnect = false;
         marty.socket.close();
     }
     marty = new Marty(ip, name);
